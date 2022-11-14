@@ -27,6 +27,7 @@ class AudioFile:
     converting to mono on the fly. See :method:`read` for more details.
     """
     def __init__(self, path: Path):
+        # TODO: add properties file name and 
         self.path = Path(path)
         self._info = None
 
@@ -41,6 +42,7 @@ class AudioFile:
     @property
     def info(self):
         if self._info is None:
+            # TODO: add loading streams for different paths - same instance
             self._info = _read_info(self.path)
         return self._info
 
@@ -96,6 +98,8 @@ class AudioFile:
 
         """
         streams = np.array(range(len(self)))[streams]
+
+        print(streams, len(self))
         single = not isinstance(streams, np.ndarray)
         if single:
             streams = [streams]
@@ -126,6 +130,7 @@ class AudioFile:
             sp.run(command, check=True)
             wavs = []
             for filename in filenames:
+                # TODO: here add trimming to duration
                 wav = np.fromfile(filename, dtype=np.float32)
                 wav = torch.from_numpy(wav)
                 wav = wav.view(-1, self.channels()).t()
@@ -155,4 +160,4 @@ class AudioFile:
         wav = torch.stack(wavs, dim=0)
         if single:
             wav = wav[0]
-        return wav
+        return wav, torch.mean(wav), torch.std(wav)

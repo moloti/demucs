@@ -13,16 +13,18 @@ def get_parser():
     parser = argparse.ArgumentParser("demucs", description="Train and evaluate Demucs.")
     default_raw = None
     default_musdb = None
-    if 'DEMUCS_RAW' in os.environ:
-        default_raw = Path(os.environ['DEMUCS_RAW'])
-    if 'DEMUCS_MUSDB' in os.environ:
-        default_musdb = Path(os.environ['DEMUCS_MUSDB'])
-    parser.add_argument(
-        "--raw",
-        type=Path,
-        default=default_raw,
-        help="Path to raw audio, can be faster, see python3 -m demucs.raw to extract.")
-    parser.add_argument("--no_raw", action="store_const", const=None, dest="raw")
+    # if 'DEMUCS_RAW' in os.environ:
+    #     default_raw = Path(os.environ['DEMUCS_RAW'])
+    # if 'DEMUCS_MUSDB' in os.environ:
+    #     default_musdb = Path(os.environ['DEMUCS_MUSDB'])
+    default_musdb = Path("LibriMix_Sample_With_Test\LibriMix_Sample_With_Test\Libri2Mix\wav8k\max")
+    
+    # parser.add_argument(
+    #     "--raw",
+    #     type=Path,
+    #     default=default_raw,
+    #     help="Path to raw audio, can be faster, see python3 -m demucs.raw to extract.")
+    # parser.add_argument("--no_raw", action="store_const", const=None, dest="raw")
     parser.add_argument("-m",
                         "--musdb",
                         type=Path,
@@ -37,6 +39,7 @@ def get_parser():
                         help="number of samples to feed in")
     parser.add_argument("--data_stride",
                         default=44100,
+                        # default=0,
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
     parser.add_argument("-w", "--workers", default=10, type=int, help="Loader workers")

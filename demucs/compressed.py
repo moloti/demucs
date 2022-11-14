@@ -7,28 +7,35 @@
 import json
 from concurrent import futures
 
+from demucs.my_musdb import MyMusDB
+
 
 from .audio import AudioFile
 
 
-def get_musdb_tracks(root, *args, **kwargs):
+def get_musdb_tracks(root, subsets):
+    # print(root, subsets)
+    mus = MyMusDB(root, subsets)
+    # print(mus.tracks)
     # TODO create a functionthat would return a dictionary of filenames and their paths
-    return {}
+    return {track.name: track.path for track in mus.tracks}
     # mus = musdb.DB(root, *args, **kwargs)
     # return {track.name: track.path for track in mus}
 
 
 class StemsSet:
-    def __init__(self, tracks, metadata, duration=None, stride=1, samplerate=44100, channels=2):
+    def __init__(self, tracks, duration=None, stride=1, samplerate=44100, channels=2):
 
         self.metadata = []
         for name, path in tracks.items():
-            meta = dict(metadata[name])
+            # meta = dict(metadata[name])
+            # we're missing duration on metadata of a track - might be needed to implement
+            meta = {}
             meta["path"] = path
             meta["name"] = name
             self.metadata.append(meta)
-            if duration is not None and meta["duration"] < duration:
-                raise ValueError(f"Track {name} duration is too small {meta['duration']}")
+            # if duration is not None and meta["duration"] < duration:
+            #     raise ValueError(f"Track {name} duration is too small {meta['duration']}")
         self.metadata.sort(key=lambda x: x["name"])
         self.duration = duration
         self.stride = stride
@@ -58,18 +65,18 @@ class StemsSet:
             if index >= examples:
                 index -= examples
                 continue
-            streams = AudioFile(meta["path"]).read(seek_time=index * self.stride,
+            streams, mean_streams,std_streams = AudioFile(meta["path"]).read(seek_time=index * self.stride,
                                                    duration=self.duration,
                                                    channels=self.channels,
                                                    samplerate=self.samplerate)
-            return (streams - meta["mean"]) / meta["std"]
+            return (streams - mean_streams) / std_streams
 
 
 def _get_track_metadata(path):
     # use mono at 44kHz as reference. For any other settings data won't be perfectly
     # normalized but it should be good enough.
     audio = AudioFile(path)
-    mix = audio.read(streams=0, channels=1, samplerate=44100)
+    mix, _, _ = audio.read(streams=0, channels=1, samplerate=44100)
     return {"duration": audio.duration, "std": mix.std().item(), "mean": mix.mean().item()}
 
 

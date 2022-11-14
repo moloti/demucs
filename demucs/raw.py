@@ -129,7 +129,7 @@ class MusDBSet:
         return (track.name, AudioFile(track.path).read(channels=self.channels,
                                                        seek_time=0,
                                                        streams=self.streams,
-                                                       samplerate=self.samplerate))
+                                                       samplerate=self.samplerate)[0])
 
 
 def build_raw(mus, destination, normalize, workers, samplerate, channels):

@@ -1,11 +1,14 @@
 from typing import List
+from pathlib import Path
+import os
 
 class Track():
-    def __init__(self, name, track):
+    def __init__(self, name, path):
         self.name = name
-        self.track = track
-        self.audio
-        self.targets
+        # self.track = track
+        self.path = path
+        self.audio = None
+        self.targets = None
 
 class MyMusDB():
     def __init__(self, root_path, set_type) -> None:
@@ -16,9 +19,13 @@ class MyMusDB():
     def __load_data__(self, set_type):
         # here load files from root path to list of tracks
         if set_type == "train":
-            pass
+            for file_name in os.listdir(os.path.join(self.root_path, Path("dev/mix_single"))):
+                file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
+                self.tracks.append(Track(file_name, file_path))
         elif set_type == "valid":
-            pass
+            for file_path in os.listdir(os.path.join(self.root_path, Path("train/mix_single"))):
+                _, file_name = os.path.split(file_path)
+                self.tracks.append(Track(file_name, file_path))
         elif set_type == "test":
             pass
         pass

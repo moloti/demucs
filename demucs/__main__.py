@@ -39,13 +39,15 @@ def main():
     args = parser.parse_args()
     name = get_name(parser, args)
     print(f"Experiment {name}")
+    args.musdb = os.path.join(sys.path[0], args.musdb)
+    # print(args.musdb)
 
-    if args.musdb is None and args.rank == 0:
-        print(
-            "You must provide the path to the MusDB dataset with the --musdb flag. "
-            "To download the MusDB dataset, see https://sigsep.github.io/datasets/musdb.html.",
-            file=sys.stderr)
-        sys.exit(1)
+    # if args.musdb is None and args.rank == 0:
+    #     print(
+    #         "You must provide the path to the MusDB dataset with the --musdb flag. "
+    #         "To download the MusDB dataset, see https://sigsep.github.io/datasets/musdb.html.",
+    #         file=sys.stderr)
+    #     sys.exit(1)
 
     eval_folder = args.evals / name
     eval_folder.mkdir(exist_ok=True, parents=True)
@@ -151,32 +153,28 @@ def main():
     samples = model.valid_length(args.samples)
     print(f"Number of training samples adjusted to {samples}")
 
-    if args.raw:
-        train_set = Rawset(args.raw / "train",
-                           samples=samples + args.data_stride,
-                           channels=args.audio_channels,
-                           streams=[0, 1, 2, 3, 4],
-                           stride=args.data_stride)
 
-        valid_set = Rawset(args.raw / "valid", channels=args.audio_channels)
-    else:
-        if not args.metadata.is_file() and args.rank == 0:
-            build_musdb_metadata(args.metadata, args.musdb, args.workers)
-        if args.world_size > 1:
-            distributed.barrier()
-        metadata = json.load(open(args.metadata))
-        duration = Fraction(samples + args.data_stride, args.samplerate)
-        stride = Fraction(args.data_stride, args.samplerate)
-        train_set = StemsSet(get_musdb_tracks(args.musdb, subsets=["train"], split="train"),
-                             metadata,
-                             duration=duration,
-                             stride=stride,
-                             samplerate=args.samplerate,
-                             channels=args.audio_channels)
-        valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets=["train"], split="valid"),
-                             metadata,
-                             samplerate=args.samplerate,
-                             channels=args.audio_channels)
+    # print("LOL",args.metadata)
+
+    # if not args.metadata.is_file() and args.rank == 0:
+    #     print("if")
+    #     build_musdb_metadata(args.metadata, args.musdb, args.workers)
+    # print(args.world_size)
+    if args.world_size > 1:
+        distributed.barrier()
+    # metadata = json.load(open(args.metadata))
+    duration = Fraction(samples + args.data_stride, args.samplerate)
+    stride = Fraction(args.data_stride, args.samplerate)
+    train_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
+                            #metadata,
+                            # duration=duration,
+                            stride=stride,
+                            samplerate=args.samplerate,
+                            channels=args.audio_channels)
+    valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
+                            #metadata,
+                            samplerate=args.samplerate,
+                            channels=args.audio_channels)
 
     best_loss = float("inf")
     for epoch, metrics in enumerate(saved.metrics):

@@ -193,6 +193,7 @@ def main():
     source_names = ["drums", "bass", "other", "vocals"]
     print(f"Separated tracks will be stored in {out.resolve()}")
     for track in args.tracks:
+        print("here")
         if not track.exists():
             print(
                 f"File {track} does not exist. If the path contains spaces, "
@@ -200,7 +201,7 @@ def main():
                 file=sys.stderr)
             continue
         print(f"Separating track {track}")
-        wav = AudioFile(track).read(streams=0, samplerate=model.samplerate, channels=model.audio_channels).to(args.device)
+        wav, _, _ = AudioFile(track).read(streams=0, samplerate=model.samplerate, channels=model.audio_channels).to(args.device)
         # Round to nearest short integer for compatibility with how MusDB load audio with stempeg.
         wav = (wav * 2**15).round() / 2**15
         ref = wav.mean(0)
