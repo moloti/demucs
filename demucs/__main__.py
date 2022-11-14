@@ -15,15 +15,14 @@ import torch as th
 from torch import distributed, nn
 from torch.nn.parallel.distributed import DistributedDataParallel
 
-from .augment import FlipChannels, FlipSign, Remix, Shift
-from .compressed import StemsSet, get_musdb_tracks
-from .model import Demucs
-from .parser import get_name, get_parser
-from .raw import Rawset
-from .tasnet import ConvTasNet
-from .test import evaluate
-from .train import train_model, validate_model
-from .utils import human_seconds, load_model, save_model, sizeof_fmt
+from demucs.augment import FlipChannels, FlipSign, Remix, Shift
+from demucs.compressed import StemsSet, get_musdb_tracks
+from demucs.model import Demucs
+from demucs.parser import get_name, get_parser
+from demucs.tasnet import ConvTasNet
+from demucs.test import evaluate
+from demucs.train import train_model, validate_model
+from demucs.utils import human_seconds, load_model, save_model, sizeof_fmt
 
 
 @dataclass
@@ -40,7 +39,7 @@ def main():
     name = get_name(parser, args)
     print(f"Experiment {name}")
     args.musdb = os.path.join(sys.path[0], args.musdb)
-    # print(args.musdb)
+    #print(args.musdb)
 
     # if args.musdb is None and args.rank == 0:
     #     print(
@@ -102,7 +101,7 @@ def main():
             lstm_layers=args.lstm_layers,
             rescale=args.rescale,
             rewrite=args.rewrite,
-            sources=4,
+            sources=2,
             stride=args.conv_stride,
             upsample=args.upsample,
             samplerate=args.samplerate

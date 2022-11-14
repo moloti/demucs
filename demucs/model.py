@@ -61,7 +61,7 @@ def downsample(x, stride):
 class Demucs(nn.Module):
     @capture_init
     def __init__(self,
-                 sources=4,
+                 sources=2,
                  audio_channels=2,
                  channels=64,
                  depth=6,
