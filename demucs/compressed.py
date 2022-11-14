@@ -7,14 +7,15 @@
 import json
 from concurrent import futures
 
-import musdb
 
 from .audio import AudioFile
 
 
 def get_musdb_tracks(root, *args, **kwargs):
-    mus = musdb.DB(root, *args, **kwargs)
-    return {track.name: track.path for track in mus}
+    # TODO create a functionthat would return a dictionary of filenames and their paths
+    return {}
+    # mus = musdb.DB(root, *args, **kwargs)
+    # return {track.name: track.path for track in mus}
 
 
 class StemsSet:

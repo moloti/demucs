@@ -9,11 +9,13 @@ import os
 from collections import defaultdict, namedtuple
 from pathlib import Path
 
-import musdb
+# import musdb
 import numpy as np
 import torch as th
 import tqdm
 from torch.utils.data import DataLoader
+
+from demucs.my_musdb import MyMusDB
 
 from .audio import AudioFile
 
@@ -154,13 +156,16 @@ def main():
 
     args = parser.parse_args()
 
-    build_raw(musdb.DB(root=args.musdb, subsets=["train"], split="train"),
+    #build_raw(MusDB(args.musdb, subsets=["train"], split="train"),
+    build_raw(MyMusDB(args.musdb, "train"),
               args.destination / "train",
               normalize=True,
               channels=args.channels,
               samplerate=args.samplerate,
               workers=args.workers)
-    build_raw(musdb.DB(root=args.musdb, subsets=["train"], split="valid"),
+
+    #build_raw(MusDB(args.musdb, subsets=["train"], split="valid"),
+    build_raw(MyMusDB(args.musdb, "valid"),
               args.destination / "valid",
               normalize=True,
               samplerate=args.samplerate,

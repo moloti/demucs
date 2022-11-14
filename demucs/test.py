@@ -7,8 +7,9 @@
 import gzip
 import sys
 from concurrent import futures
+from demucs.my_musdb import MyMusDB
 
-import musdb
+# import musdb
 import museval
 import torch as th
 import tqdm
@@ -41,7 +42,8 @@ def evaluate(model,
     json_folder.mkdir(exist_ok=True, parents=True)
 
     # we load tracks from the original musdb set
-    test_set = musdb.DB(musdb_path, subsets=["test"])
+    # test_set = MusDB(musdb_path, subsets=["test"])
+    test_set = MyMusDB(musdb_path, "test")
 
     for p in model.parameters():
         p.requires_grad = False
