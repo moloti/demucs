@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 import json
+import os
 import subprocess as sp
 from pathlib import Path
 
@@ -26,13 +27,15 @@ class AudioFile:
     Allows to read audio from any format supported by ffmpeg, as well as resampling or
     converting to mono on the fly. See :method:`read` for more details.
     """
-    def __init__(self, path: Path):
+    def __init__(self, folder_path: Path, file_name: Path):
         # TODO: add properties file name and 
-        self.path = Path(path)
+        self.folder_path = Path(folder_path)
+        self.file_name = Path(file_name)
+        self.mix_file_path = os.path.join(folder_path, Path("dev/mix_single"), file_name)
         self._info = None
 
     def __repr__(self):
-        features = [("path", self.path)]
+        features = [("folder path", self.folder_path)]
         features.append(("samplerate", self.samplerate()))
         features.append(("channels", self.channels()))
         features.append(("streams", len(self)))
@@ -43,7 +46,11 @@ class AudioFile:
     def info(self):
         if self._info is None:
             # TODO: add loading streams for different paths - same instance
-            self._info = _read_info(self.path)
+            self._info = _read_info(self.mix_file_path)
+            speaker_info = _read_info(os.path.join(self.folder_path, Path("dev/s1"), self.file_name))
+            noise_info= _read_info(os.path.join(self.folder_path, Path("dev/noise"), self.file_name))
+            self._info["streams"].extend(speaker_info["streams"])
+            self._info["streams"].extend(noise_info["streams"])
         return self._info
 
     @property
@@ -58,6 +65,8 @@ class AudioFile:
         ]
 
     def __len__(self):
+        # print(self.info["streams"])
+        # print(self._audio_streams)
         return len(self._audio_streams)
 
     def channels(self, stream=0):
@@ -116,7 +125,7 @@ class AudioFile:
             command += ['-loglevel', 'panic']
             if seek_time:
                 command += ['-ss', str(seek_time)]
-            command += ['-i', str(self.path)]
+            command += ['-i', str(self.mix_file_path)]
             for stream, filename in zip(streams, filenames):
                 command += ['-map', f'0:{self._audio_streams[stream]}']
                 if query_duration is not None:

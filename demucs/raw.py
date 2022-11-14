@@ -126,7 +126,7 @@ class MusDBSet:
 
     def __getitem__(self, index):
         track = self.mus.tracks[index]
-        return (track.name, AudioFile(track.path).read(channels=self.channels,
+        return (track.name, AudioFile(track.path, track.name).read(channels=self.channels,
                                                        seek_time=0,
                                                        streams=self.streams,
                                                        samplerate=self.samplerate)[0])

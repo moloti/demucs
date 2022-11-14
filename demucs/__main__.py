@@ -16,7 +16,7 @@ from torch import distributed, nn
 from torch.nn.parallel.distributed import DistributedDataParallel
 
 from .augment import FlipChannels, FlipSign, Remix, Shift
-from .compressed import StemsSet, build_musdb_metadata, get_musdb_tracks
+from .compressed import StemsSet, get_musdb_tracks
 from .model import Demucs
 from .parser import get_name, get_parser
 from .raw import Rawset
@@ -166,12 +166,14 @@ def main():
     duration = Fraction(samples + args.data_stride, args.samplerate)
     stride = Fraction(args.data_stride, args.samplerate)
     train_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
+                            folder_path=args.musdb,
                             #metadata,
                             # duration=duration,
                             stride=stride,
                             samplerate=args.samplerate,
                             channels=args.audio_channels)
     valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
+                            folder_path=args.musdb,
                             #metadata,
                             samplerate=args.samplerate,
                             channels=args.audio_channels)

@@ -51,10 +51,10 @@ def train_model(epoch,
                 continue
             streams = streams.to(device)
             sources = streams[:, 1:]
-            sources = augment(sources)
-            mix = sources.sum(dim=1)
+            sources = augment(sources) # y
+            mix = sources.sum(dim=1) # x
 
-            estimates = model(mix)
+            estimates = model(mix) # pred_y
             sources = center_trim(sources, estimates)
             loss = criterion(estimates, sources)
             loss.backward()
