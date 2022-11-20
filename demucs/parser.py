@@ -17,7 +17,8 @@ def get_parser():
     #     default_raw = Path(os.environ['DEMUCS_RAW'])
     # if 'DEMUCS_MUSDB' in os.environ:
     #     default_musdb = Path(os.environ['DEMUCS_MUSDB'])
-    default_musdb = Path("LibriMix_Sample_With_Test\LibriMix_Sample_With_Test\Libri2Mix\wav8k\max")
+    default_musdb = Path("/LibriMix_Sample_With_Test/Libri2Mix/wav8k/max")
+    #/Users/dg/Documents/Development/02456_Deep_Learning
     
     # parser.add_argument(
     #     "--raw",
