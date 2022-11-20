@@ -28,7 +28,6 @@ class AudioFile:
     converting to mono on the fly. See :method:`read` for more details.
     """
     def __init__(self, folder_path: Path, file_name: Path):
-        # TODO: add properties file name and 
         self.folder_path = Path(folder_path)
         self.file_name = Path(file_name)
         self.mix_file_path = os.path.join(folder_path, Path("dev/mix_single"), file_name)
@@ -45,11 +44,8 @@ class AudioFile:
     @property
     def info(self):
         if self._info is None:
-            # TODO: add loading streams for different paths - same instance
-            self._info = _read_info(self.mix_file_path)
-            speaker_info = _read_info(os.path.join(self.folder_path, Path("dev/s1"), self.file_name))
+            self._info = _read_info(os.path.join(self.folder_path, Path("dev/s1"), self.file_name))
             noise_info= _read_info(os.path.join(self.folder_path, Path("dev/noise"), self.file_name))
-            self._info["streams"].extend(speaker_info["streams"])
             self._info["streams"].extend(noise_info["streams"])
         return self._info
 
@@ -65,8 +61,6 @@ class AudioFile:
         ]
 
     def __len__(self):
-        # print(self.info["streams"])
-        # print(self._audio_streams)
         return len(self._audio_streams)
 
     def channels(self, stream=0):
@@ -107,12 +101,10 @@ class AudioFile:
 
         """
         streams = np.array(range(len(self)))[streams]
-
-        print(streams, len(self))
         single = not isinstance(streams, np.ndarray)
         if single:
             streams = [streams]
-
+        duration =3
         if duration is None:
             target_size = None
             query_duration = None
@@ -123,23 +115,25 @@ class AudioFile:
         with temp_filenames(len(streams)) as filenames:
             command = ['ffmpeg', '-y']
             command += ['-loglevel', 'panic']
-            if seek_time:
-                command += ['-ss', str(seek_time)]
-            command += ['-i', str(self.mix_file_path)]
-            for stream, filename in zip(streams, filenames):
-                command += ['-map', f'0:{self._audio_streams[stream]}']
-                if query_duration is not None:
-                    command += ['-t', str(query_duration)]
-                command += ['-threads', '1']
-                command += ['-f', 'f32le']
-                if samplerate is not None:
-                    command += ['-ar', str(samplerate)]
-                command += [filename]
-
+            command += ['-i', str(self.info["format"]["filename"])] # load s1
+            if query_duration is not None:
+                command += ['-t', str(query_duration)]
+            command += ['-f', 'f32le']
+            command += [filenames[0]]
             sp.run(command, check=True)
+
+            command = ['ffmpeg', '-y']
+            command += ['-loglevel', 'panic']
+            command += ['-i', str(os.path.join(self.folder_path, Path("dev/noise"), self.file_name))] # load noise
+            if query_duration is not None:
+                command += ['-t', str(query_duration)]
+            command += ['-f', 'f32le']
+            command += [filenames[1]]
+            sp.run(command, check=True)
+
+
             wavs = []
             for filename in filenames:
-                # TODO: here add trimming to duration
                 wav = np.fromfile(filename, dtype=np.float32)
                 wav = torch.from_numpy(wav)
                 wav = wav.view(-1, self.channels()).t()
@@ -168,5 +162,5 @@ class AudioFile:
                 wavs.append(wav)
         wav = torch.stack(wavs, dim=0)
         if single:
-            wav = wav[0]
+            wav = wav[0]  
         return wav, torch.mean(wav), torch.std(wav)

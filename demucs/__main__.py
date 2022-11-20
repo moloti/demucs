@@ -102,7 +102,7 @@ def main():
             lstm_layers=args.lstm_layers,
             rescale=args.rescale,
             rewrite=args.rewrite,
-            sources=4,
+            sources=2,
             stride=args.conv_stride,
             upsample=args.upsample,
             samplerate=args.samplerate

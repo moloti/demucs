@@ -32,14 +32,14 @@ def get_parser():
                         help="Path to musdb root")
     parser.add_argument("--metadata", type=Path, default=Path("metadata/musdb.json"))
     parser.add_argument("--samplerate", type=int, default=44100)
-    parser.add_argument("--audio_channels", type=int, default=2)
+    parser.add_argument("--audio_channels", type=int, default=1)
     parser.add_argument("--samples",
                         default=44100 * 10,
                         type=int,
                         help="number of samples to feed in")
     parser.add_argument("--data_stride",
-                        default=44100,
-                        # default=0,
+                        # default=44100,
+                        default=0,
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
     parser.add_argument("-w", "--workers", default=10, type=int, help="Loader workers")

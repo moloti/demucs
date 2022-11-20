@@ -50,7 +50,7 @@ def train_model(epoch,
                 # skip uncomplete batch for augment.Remix to work properly
                 continue
             streams = streams.to(device)
-            sources = streams[:, 1:]
+            sources = streams  # [:, 1:]
             sources = augment(sources) # y
             mix = sources.sum(dim=1) # x
 

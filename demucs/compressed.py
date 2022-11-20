@@ -24,7 +24,7 @@ def get_musdb_tracks(root, subsets):
 
 
 class StemsSet:
-    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=44100, channels=2):
+    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=44100, channels=1):
 
         self.metadata = []
         for name, path in tracks.items():
