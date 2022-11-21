@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: moduł",
+            "type": "python",
+            "request": "launch",
+            "module": "demucs",
+            "justMyCode": true,
+            "args": ["--musdb", "LibriMix_Sample_With_Test\\LibriMix_Sample_With_Test\\Libri2Mix\\wav8k\\max", "-b", "4"]
+        }
+    ]
+}
