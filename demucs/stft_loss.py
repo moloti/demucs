@@ -14,7 +14,7 @@ Params:
 def stft(x, fft_size, hop_size, win_length, window_fn):
     
     # Outputs 2 dimensional real tensor where the last dimension represents 
-    # real and imaginary components
+    # real and imaginary component
     x_transformed = torch.stft(x, fft_size, hop_size, win_length, window_fn)
     real = x_transformed[..., 0]
     imag = x_transformed[..., 1]
@@ -65,7 +65,7 @@ class STFTLoss(torch.nn.Module):
         self.fft_size = fft_size
         self.hop_size = hop_size
         self.win_length = win_length
-        self.register_buffer("window", getattr(torch, window_fn)(win_length))
+        self.register_buffer("window_fn", getattr(torch, window_fn)(win_length))
         self.spectral_convergenge_loss = SpectralConvergengeLoss()
         self.log_stft_magnitude_loss = LogSTFTMagnitudeLoss()
     
@@ -78,8 +78,8 @@ class STFTLoss(torch.nn.Module):
             Tensor: Spectral convergence loss value.
             Tensor: Log STFT magnitude loss value.
         """
-        x_mag = stft(x, self.fft_size, self.shift_size, self.win_length, self.window)
-        y_mag = stft(y, self.fft_size, self.shift_size, self.win_length, self.window)
+        x_mag = stft(x, self.fft_size, self.hop_size, self.win_length, self.window_fn)
+        y_mag = stft(y, self.fft_size, self.hop_size, self.win_length, self.window_fn)
         sc_loss = self.spectral_convergenge_loss(x_mag, y_mag)
         mag_loss = self.log_stft_magnitude_loss(x_mag, y_mag)
 
@@ -92,7 +92,7 @@ class MultiResolutionSTFTLoss(torch.nn.Module):
                  fft_sizes=[1024, 2048, 512],
                  hop_sizes=[120, 240, 50],
                  win_lengths=[600, 1200, 240],
-                 window="hann_window", factor_sc=0.1, factor_mag=0.1):
+                 window_fn="hann_window", factor_sc=0.1, factor_mag=0.1):
         """Initialize Multi resolution STFT loss module.
         Args:
             fft_sizes (list): List of FFT sizes.
@@ -105,7 +105,7 @@ class MultiResolutionSTFTLoss(torch.nn.Module):
         assert len(fft_sizes) == len(hop_sizes) == len(win_lengths)
         self.stft_losses = torch.nn.ModuleList()
         for fs, ss, wl in zip(fft_sizes, hop_sizes, win_lengths):
-            self.stft_losses += [STFTLoss(fs, ss, wl, window)]
+            self.stft_losses += [STFTLoss(fs, ss, wl, window_fn)]
         self.factor_sc = factor_sc
         self.factor_mag = factor_mag
 

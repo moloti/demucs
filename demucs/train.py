@@ -8,7 +8,7 @@ import sys
 
 import tqdm
 import inspect
-from demucs.sftf_loss import MultiResolutionSTFTLoss
+from demucs.stft_loss import MultiResolutionSTFTLoss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -61,10 +61,10 @@ def train_model(epoch,
             sources = center_trim(sources, estimates)
 
             loss = criterion(estimates, sources)
-            if stft_loss:
-                # Check if the input needs to be squeezed
-                sc_loss, mag_loss = MultiResSTFTLoss(estimates, sources)
-                loss += sc_loss + mag_loss
+            # if stft_loss:
+            #     # Check if the input needs to be squeezed
+            #     sc_loss, mag_loss = stft_loss(estimates.squeeze(1), sources.squeeze(1))
+            #     loss += sc_loss + mag_loss
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -88,6 +88,7 @@ def validate_model(epoch,
                    dataset,
                    model,
                    criterion,
+                   stft_loss,
                    device="cpu",
                    rank=0,
                    world_size=1,
@@ -111,6 +112,10 @@ def validate_model(epoch,
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
+        # if stft_loss:
+        #         # Check if the input needs to be squeezed
+        #         sc_loss, mag_loss = stft_loss(estimates, sources)
+        #         loss += sc_loss + mag_loss
         current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
 

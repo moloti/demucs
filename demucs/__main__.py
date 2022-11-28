@@ -10,7 +10,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from fractions import Fraction
-from demucs.sftf_loss import MultiResolutionSTFTLoss
+from demucs.stft_loss import MultiResolutionSTFTLoss
 
 import torch as th
 from torch import distributed, nn
@@ -219,6 +219,7 @@ def main():
                                     valid_set,
                                     model,
                                     criterion,
+                                    multiResSTFTLoss,
                                     device=device,
                                     rank=args.rank,
                                     split=args.split_valid,
