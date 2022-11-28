@@ -64,7 +64,7 @@ class Demucs(nn.Module):
                  sources=2,
                  audio_channels=2,
                  channels=64,
-                 depth=6,
+                 depth=5,
                  rewrite=True,
                  glu=True,
                  upsample=False,
@@ -74,7 +74,7 @@ class Demucs(nn.Module):
                  growth=2.,
                  lstm_layers=2,
                  context=3,
-                 samplerate=44100):
+                 samplerate=24000):
         """
         Args:
             sources (int): number of sources to separate

@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "demucs",
             "justMyCode": true,
-            "args": ["--musdb", "LibriMix_Sample_With_Test\\LibriMix_Sample_With_Test\\Libri2Mix\\wav8k\\max", "-b", "4"]
+            "args": ["--musdb", "LibriMix_Sample_With_Test\\LibriMix_Sample_With_Test\\Libri2Mix\\wav8k\\max", "-b", "4", "--samplerate", "8000", "--samples", "24000"]
         }
     ]
 }

@@ -171,11 +171,11 @@ def main():
     train_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
                             folder_path=args.musdb,
                             #metadata,
-                            # duration=duration,
+                            duration=duration,
                             stride=stride,
                             samplerate=args.samplerate,
                             channels=args.audio_channels)
-    valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets="train"),
+    valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets="valid"),
                             folder_path=args.musdb,
                             #metadata,
                             samplerate=args.samplerate,
