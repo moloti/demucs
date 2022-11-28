@@ -7,6 +7,8 @@
 import sys
 
 import tqdm
+import inspect
+from demucs.sftf_loss import MultiResolutionSTFTLoss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -17,6 +19,7 @@ def train_model(epoch,
                 dataset,
                 model,
                 criterion,
+                stft_loss,
                 optimizer,
                 augment,
                 repeat=1,
@@ -56,7 +59,12 @@ def train_model(epoch,
 
             estimates = model(mix) # pred_y
             sources = center_trim(sources, estimates)
+
             loss = criterion(estimates, sources)
+            if stft_loss:
+                # Check if the input needs to be squeezed
+                sc_loss, mag_loss = MultiResSTFTLoss(estimates, sources)
+                loss += sc_loss + mag_loss
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()

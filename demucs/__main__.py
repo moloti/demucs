@@ -10,6 +10,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from fractions import Fraction
+from demucs.sftf_loss import MultiResolutionSTFTLoss
 
 import torch as th
 from torch import distributed, nn
@@ -146,6 +147,9 @@ def main():
     else:
         criterion = nn.L1Loss()
 
+    if args.stft_loss: 
+        MultiResSTFTLoss = MultiResolutionSTFTLoss().to(device)
+
     # Setting number of samples so that all convolution windows are full.
     # Prevents hard to debug mistake with the prediction being shifted compared
     # to the input mixture.
@@ -200,6 +204,7 @@ def main():
                                  train_set,
                                  dmodel,
                                  criterion,
+                                 MultiResSTFTLoss,
                                  optimizer,
                                  augment,
                                  batch_size=args.batch_size,
@@ -207,7 +212,8 @@ def main():
                                  repeat=args.repeat,
                                  seed=args.seed,
                                  workers=args.workers,
-                                 world_size=args.world_size)
+                                 world_size=args.world_size,
+                                 )
         model.eval()
         valid_loss = validate_model(epoch,
                                     valid_set,
