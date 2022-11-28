@@ -59,9 +59,9 @@ def train_model(epoch,
             mix = sources.sum(dim=1) # x
             estimates = model(mix) # pred_y
             sources = center_trim(sources, estimates)
-            squeezed = estimates.squeeze(1)
-
             loss = criterion(estimates, sources)
+            estimates = estimates[:, 1:]
+            estimates = estimates.sum(dim=1)
             if stft_loss:
                 # Check if the input needs to be squeezed
                 sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
