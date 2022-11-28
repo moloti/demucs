@@ -49,9 +49,10 @@ def train_model(epoch,
                        unit=" batch")
         total_loss = 0
         for idx, streams in enumerate(tq):
-            if len(streams) < batch_size:
-                # skip uncomplete batch for augment.Remix to work properly
-                continue
+            # if len(streams) < batch_size:
+            #     # skip uncomplete batch for augment.Remix to work properly
+            #     continue
+            print(device)
             streams = streams.to(device)
             sources = streams  # [:, 1:]
             sources = augment(sources) # y
