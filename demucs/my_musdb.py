@@ -18,6 +18,9 @@ class MyMusDB():
         self.tracks=[]
         self.__load_data__(set_type)
 
+    def __len__(self):
+        return len(self.tracks)
+
     def __load_data__(self, set_type):
         # here load files from root path to list of tracks
         files = os.listdir(os.path.join(self.root_path, Path("dev/mix_single")))
@@ -25,15 +28,15 @@ class MyMusDB():
         train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
 
         if set_type == "train":
-            for file_name in train_files:
+            for file_name in train_files[:8]:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "valid":
-            for file_name in valid_files:
+            for file_name in valid_files[:4]:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "test":
-            for file_name in test_files:
+            for file_name in test_files[:4]:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         
