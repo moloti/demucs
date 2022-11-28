@@ -109,7 +109,7 @@ def validate_model(epoch,
         # streams = streams[..., :15_000_000]
         streams = streams.to(device)
         sources = streams  # [:, 1:]
-        mix = sources.sum(dim=1) # x
+        mix = sources.sum(dim=0) # x
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
