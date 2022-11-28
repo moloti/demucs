@@ -19,6 +19,7 @@ def train_model(epoch,
                 dataset,
                 model,
                 criterion,
+                stft_loss,
                 optimizer,
                 augment,
                 repeat=1,
@@ -26,8 +27,7 @@ def train_model(epoch,
                 seed=None,
                 workers=4,
                 world_size=1,
-                batch_size=16,
-                stft_loss=False):
+                batch_size=16):
 
     if world_size > 1:
         sampler = DistributedSampler(dataset)
@@ -63,7 +63,7 @@ def train_model(epoch,
             loss = criterion(estimates, sources)
             if stft_loss:
                 # Check if the input needs to be squeezed
-                sc_loss, mag_loss = criterion(estimates, sources)
+                sc_loss, mag_loss = MultiResSTFTLoss(estimates, sources)
                 loss += sc_loss + mag_loss
             loss.backward()
             optimizer.step()
