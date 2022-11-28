@@ -18,21 +18,22 @@ def get_musdb_tracks(root, subsets):
     mus = MyMusDB(root, subsets)
     # print(mus.tracks)
     # TODO create a functionthat would return a dictionary of filenames and their paths
-    return {track.name: track.path for track in mus.tracks}
+    return {track.name: (track.path, track.duration) for track in mus.tracks}
     # mus = musdb.DB(root, *args, **kwargs)
     # return {track.name: track.path for track in mus}
 
 
 class StemsSet:
-    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=44100, channels=1):
+    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=8000, channels=1):
 
         self.metadata = []
-        for name, path in tracks.items():
+        for name, (path, duration) in tracks.items():
             # meta = dict(metadata[name])
             # we're missing duration on metadata of a track - might be needed to implement
             meta = {}
             meta["path"] = path
             meta["name"] = name
+            meta["duration"] = duration
             meta["folder_path"] = folder_path
             self.metadata.append(meta)
             # if duration is not None and meta["duration"] < duration:
@@ -77,7 +78,7 @@ def _get_track_metadata(path, filename):
     # use mono at 44kHz as reference. For any other settings data won't be perfectly
     # normalized but it should be good enough.
     audio = AudioFile(path, filename)
-    mix, _, _ = audio.read(streams=0, channels=1, samplerate=44100)
+    mix, _, _ = audio.read(streams=0, channels=1, samplerate=8000)
     return {"duration": audio.duration, "std": mix.std().item(), "mean": mix.mean().item()}
 
 

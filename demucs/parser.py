@@ -32,15 +32,15 @@ def get_parser():
                         default=default_musdb,
                         help="Path to musdb root")
     parser.add_argument("--metadata", type=Path, default=Path("metadata/musdb.json"))
-    parser.add_argument("--samplerate", type=int, default=44100)
+    parser.add_argument("--samplerate", type=int, default=8000)
     parser.add_argument("--audio_channels", type=int, default=1)
     parser.add_argument("--samples",
-                        default=44100 * 10,
+                        default=8000 * 3,
                         type=int,
                         help="number of samples to feed in")
     parser.add_argument("--data_stride",
                         # default=44100,
-                        default=0,
+                        default=8000,
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
     parser.add_argument("-w", "--workers", default=10, type=int, help="Loader workers")
@@ -114,7 +114,7 @@ def get_parser():
                         help="Number of channels between two layers will increase by this factor")
     parser.add_argument("--depth",
                         type=int,
-                        default=6,
+                        default=5,
                         help="Number of layers for the encoder and decoder")
     parser.add_argument("--lstm_layers", type=int, default=2, help="Number of layers for the LSTM")
     parser.add_argument("--channels",

@@ -96,10 +96,11 @@ def validate_model(epoch,
     for index in tq:
         streams = dataset[index]
         # first five minutes to avoid OOM on --upsample models
-        streams = streams[..., :15_000_000]
+        # streams = streams[..., :15_000_000]
         streams = streams.to(device)
-        sources = streams[1:]
-        mix = streams[0]
+        sources = streams  # [:, 1:]
+        mix = sources.sum(dim=1) # x
+        
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
         current_loss += loss.item() / len(indexes)
