@@ -8,6 +8,8 @@ import gzip
 import sys
 from concurrent import futures
 from demucs.my_musdb import MyMusDB
+from demucs.compressed import StemsSet, get_musdb_tracks
+
 
 # import musdb
 import museval
@@ -43,7 +45,17 @@ def evaluate(model,
 
     # we load tracks from the original musdb set
     # test_set = MusDB(musdb_path, subsets=["test"])
-    test_set = MyMusDB(musdb_path, "test")
+    test_set_names = MyMusDB(musdb_path, "test")
+    test_set = StemsSet(get_musdb_tracks(musdb_path, subsets="test"),
+                            folder_path=musdb_path,
+                            #metadata,
+                            # duration=duration,
+                            # stride=stride,
+                            # samplerate=args.samplerate,
+                            # channels=args.audio_channels
+                            )
+
+
 
     for p in model.parameters():
         p.requires_grad = False
@@ -52,22 +64,22 @@ def evaluate(model,
     pendings = []
     with futures.ProcessPoolExecutor(workers or 1) as pool:
         for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout):
-            track = test_set.tracks[index]
+            track, mean_track, std_track = test_set[index]
+            musdb_track = test_set_names.tracks[index]
 
-            out = json_folder / f"{track.name}.json.gz"
+            out = json_folder / f"{musdb_track.name}.json.gz"
             if out.exists():
                 continue
 
-            mix = th.from_numpy(track.audio).t().float()
-            ref = mix.mean(dim=0)  # mono mixture
-            mix = (mix - ref.mean()) / ref.std()
+            # mix = th.from_numpy(track).t().float()
+            mix = track.sum(dim=0)
+            # ref = mix.mean(dim=0)  # mono mixture
 
             estimates = apply_model(model, mix.to(device), shifts=shifts, split=split)
-            estimates = estimates * ref.std() + ref.mean()
+            estimates = estimates * std_track + mean_track
 
-            estimates = estimates.transpose(1, 2)
-            references = th.stack(
-                [th.from_numpy(track.targets[name].audio) for name in source_names])
+            # estimates = estimates.transpose(1, 2)
+            references = track
             references = references.numpy()
             estimates = estimates.cpu().numpy()
             if save:
@@ -86,7 +98,7 @@ def evaluate(model,
             if workers:
                 pending = pending.result()
             sdr, isr, sir, sar = pending
-            track_store = museval.TrackStore(win=44100, hop=44100, track_name=track_name)
+            track_store = museval.TrackStore(win=8000*3, hop=8000*3, track_name=track_name)
             for idx, target in enumerate(source_names):
                 values = {
                     "SDR": sdr[idx].tolist(),

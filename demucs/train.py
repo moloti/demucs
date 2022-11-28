@@ -48,7 +48,7 @@ def train_model(epoch,
                        file=sys.stdout,
                        unit=" batch")
         total_loss = 0
-        for idx, streams in enumerate(tq):
+        for idx, (streams, _, _) in enumerate(tq):
             # if len(streams) < batch_size:
             #     # skip uncomplete batch for augment.Remix to work properly
             #     continue
@@ -104,7 +104,7 @@ def validate_model(epoch,
                    unit=" track")
     current_loss = 0
     for index in tq:
-        streams = dataset[index]
+        streams,  _, _ = dataset[index]
         # first five minutes to avoid OOM on --upsample models
         # streams = streams[..., :15_000_000]
         streams = streams.to(device)

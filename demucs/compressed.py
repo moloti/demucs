@@ -71,7 +71,7 @@ class StemsSet:
                                                    duration=self.duration,
                                                    channels=self.channels,
                                                    samplerate=self.samplerate)
-            return (streams - mean_streams) / std_streams
+            return (streams - mean_streams) / std_streams, mean_streams, std_streams
 
 
 def _get_track_metadata(path, filename):
