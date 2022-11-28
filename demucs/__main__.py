@@ -148,7 +148,7 @@ def main():
         criterion = nn.L1Loss()
 
     if args.stft_loss: 
-        MultiResSTFTLoss = MultiResolutionSTFTLoss().to(device)
+        multiResSTFTLoss = MultiResolutionSTFTLoss().to(device)
 
     # Setting number of samples so that all convolution windows are full.
     # Prevents hard to debug mistake with the prediction being shifted compared
@@ -204,7 +204,7 @@ def main():
                                  train_set,
                                  dmodel,
                                  criterion,
-                                 MultiResSTFTLoss,
+                                 multiResSTFTLoss,
                                  optimizer,
                                  augment,
                                  batch_size=args.batch_size,

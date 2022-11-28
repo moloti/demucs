@@ -1,8 +1,38 @@
+
+import argparse
+import logging
+from demucs.utils import load_model
+import torch.hub
 from pesq import pesq
 from pystoi import stoi
 
-def evaluate():
-    pass
+parser = argparse.ArgumentParser('demucs.evaluate', description='Evaluate Model Performance')
+
+parser.add_argument('--audio_dir', help='The path to the directory where the clean and the noisy audio files are stored')
+parser.add_argument("-m", "--model_path", help="Path to local trained model.")
+
+logger = logging.getLogger(__name__)
+            
+
+def evaluate(args, model=None, data_loader=None):
+    pesq = 0
+    stoi = 0
+    cnt = 0
+    updates = 5
+
+    # Load model
+    if not model & args.model_path:
+        model = load_model(args.model_path)
+
+    model.eval()
+
+    # Load data
+    if data_loader is None:
+        dataset
+    
+    
+        
+
 
 def get_pesq(ref_sig, out_sig, sr):
     """Calculate PESQ.
