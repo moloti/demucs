@@ -61,10 +61,10 @@ def train_model(epoch,
             sources = center_trim(sources, estimates)
 
             loss = criterion(estimates, sources)
-            # if stft_loss:
-            #     # Check if the input needs to be squeezed
-            #     sc_loss, mag_loss = stft_loss(estimates.squeeze(1), sources.squeeze(1))
-            #     loss += sc_loss + mag_loss
+            if stft_loss:
+                # Check if the input needs to be squeezed
+                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), sources.squeeze(1))
+                loss += sc_loss + mag_loss
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -108,14 +108,14 @@ def validate_model(epoch,
         # streams = streams[..., :15_000_000]
         streams = streams.to(device)
         sources = streams  # [:, 1:]
-        mix = sources.sum(dim=1) # x
+        mix = sources.sum(dim=0) # x
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
-        # if stft_loss:
-        #         # Check if the input needs to be squeezed
-        #         sc_loss, mag_loss = stft_loss(estimates, sources)
-        #         loss += sc_loss + mag_loss
+        if stft_loss:
+                # Check if the input needs to be squeezed
+                sc_loss, mag_loss = stft_loss(estimates, sources)
+                loss += sc_loss + mag_loss
         current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
 
