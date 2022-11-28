@@ -57,14 +57,14 @@ def train_model(epoch,
             sources = streams  # [:, 1:]
             sources = augment(sources) # y
             mix = sources.sum(dim=1) # x
-
             estimates = model(mix) # pred_y
             sources = center_trim(sources, estimates)
+            squeezed = estimates.squeeze(1)
 
             loss = criterion(estimates, sources)
             if stft_loss:
                 # Check if the input needs to be squeezed
-                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), sources.squeeze(1))
+                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
                 loss += sc_loss + mag_loss
             loss.backward()
             optimizer.step()

@@ -7,4 +7,5 @@ torch==1.13.0
 tqdm==4.64.1
 treetable==0.2.5
 pystoi==0.3.3
+pesq==0.0.4
 scikit-learn==1.1.3
