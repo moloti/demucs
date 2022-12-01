@@ -257,16 +257,18 @@ def main():
         device = "cpu"
         model.to(device)
     model.eval()
-    evaluate(model,
-             args.musdb,
-             eval_folder,
-             rank=args.rank,
-             world_size=args.world_size,
-             device=device,
-             save=args.save,
-             split=args.split_valid,
-             shifts=args.shifts,
-             workers=args.eval_workers)
+    # Here we need to add the evaluation model...
+    # evaluate(model,
+    #          args.musdb,
+    #          eval_folder,
+    #          rank=args.rank,
+    #          world_size=args.world_size,
+    #          device=device,
+    #          save=args.save,
+    #          split=args.split_valid,
+    #          shifts=args.shifts,
+    #          workers=args.eval_workers)
+    
     model.to("cpu")
     save_model(model, args.models / f"{name}.th")
     if args.rank == 0:
