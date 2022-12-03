@@ -25,7 +25,7 @@ def train_model(epoch,
                 repeat=1,
                 device="cpu",
                 seed=None,
-                workers=4,
+                workers=8,
                 world_size=1,
                 batch_size=16):
 
