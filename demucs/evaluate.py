@@ -5,6 +5,7 @@ from fractions import Fraction
 import json
 import logging
 import sys
+sys.path.append('/Users/dg/Documents/Development/02456_Deep_Learning/demucs')
 
 import tqdm
 from demucs.compressed import StemsSet, StemsSetValidation, get_musdb_tracks, get_validation_tracks
@@ -18,6 +19,7 @@ parser = argparse.ArgumentParser('demucs.evaluate', description='Evaluate Model 
 
 parser.add_argument('--audio_dir', help='The path to the directory where the clean and the noisy audio files are stored')
 parser.add_argument("-m", "--model_path", help="Path to local trained model.")
+parser.add_argument("--eval_folder", help="Path to where the training results are stored.")
 parser.add_argument("--samplerate", type=int, default=8000)
 parser.add_argument("--audio_channels", type=int, default=1)
 parser.add_argument("--data_stride",
@@ -42,16 +44,22 @@ rank = 0
 world_size = 1
             
 
-def evaluate(args, model=None, data_loader=None):
+def evaluate(args, workers=2, model=None, data_loader=None):
     pesq = 0
     stoi = 0
     cnt = 0
     updates = 5
+
+    # output_dir = eval_folder / "results"
+    # output_dir.mkdir(exist_ok=True, parents=True)
+    # json_folder = eval_folder / "results/test"
+    # json_folder.mkdir(exist_ok=True, parents=True)
+
     duration = Fraction(args.samples + args.data_stride, args.samplerate)
     stride = Fraction(args.data_stride, args.samplerate)
 
     # Load model
-    if not model & args.model_path:
+    if model is None:
         model = load_model(args.model_path)
 
     model.eval()
@@ -70,14 +78,9 @@ def evaluate(args, model=None, data_loader=None):
         loader = DataLoader(dataset, batch_size=1, num_workers=2)
     pendings = []
 
-    with ProcessPoolExecutor(args.eval_workers) as pool:
-        with torch.no_grad():
-            tq = tqdm.tqdm(loader,
-                       ncols=120,
-                       desc="Update",
-                       leave=False,
-                       file=sys.stdout,
-                       unit="batch")
+
+    with ProcessPoolExecutor(workers or 1) as pool:
+        for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout):
 
             for i, streams in enumerate(tq):
                 
@@ -174,7 +177,7 @@ def average(metrics, count=1.):
 def main():
     args = parser.parse_args()
 
-    logging.basicConfig(stream=sys.stderr, level=args.verbose)
+    logging.basicConfig(stream=sys.stderr)
     logger.debug(args)
     pesq, stoi = evaluate(args)
     json.dump({'pesq': pesq, 'stoi': stoi}, sys.stdout)

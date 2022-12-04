@@ -11,3 +11,4 @@ demucs_release
 *launch.json
 LibriMix_Sample_With_Test/
 .DS_Store
+*.th
