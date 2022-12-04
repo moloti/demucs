@@ -43,7 +43,7 @@ def get_parser():
                         default=8000,
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
-    parser.add_argument("-w", "--workers", default=10, type=int, help="Loader workers")
+    parser.add_argument("-w", "--workers", default=4, type=int, help="Loader workers")
     parser.add_argument("--eval_workers", default=2, type=int, help="Final evaluation workers")
     parser.add_argument("-d",
                         "--device",
@@ -91,7 +91,7 @@ def get_parser():
     parser.add_argument("-b", "--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--mse", action="store_true", help="Use MSE instead of L1")
-    parser.add_argument("--stft_loss", action="store_true", help="Use MulitResolution STFT Loss in addition to L1", default=False)
+    parser.add_argument("--stft_loss", action="store_true", help="Use MulitResolution STFT Loss in addition to L1", default=True)
     parser.add_argument("--no_augment",
                         action="store_false",
                         dest="augment",

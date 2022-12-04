@@ -15,6 +15,7 @@ def stft(x, fft_size, hop_size, win_length, window_fn):
     
     # Outputs 2 dimensional real tensor where the last dimension represents 
     # real and imaginary component
+    x = x.squeeze(1)
     x_transformed = torch.stft(x, fft_size, hop_size, win_length, window_fn)
     real = x_transformed[..., 0]
     imag = x_transformed[..., 1]
@@ -36,6 +37,7 @@ class SpectralConvergengeLoss(torch.nn.Module):
         Returns:
             Tensor: Spectral convergence loss value.
         """
+        y_mag = y_mag[:,0:len(x_mag[0]),:]
         return torch.norm(y_mag - x_mag, p="fro") / torch.norm(y_mag, p="fro")
 
 
@@ -54,6 +56,7 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
         Returns:
             Tensor: Log STFT magnitude loss value.
         """
+        y_mag = y_mag[:,0:len(x_mag[0]),:]
         return F.l1_loss(torch.log(y_mag), torch.log(x_mag))
 
 

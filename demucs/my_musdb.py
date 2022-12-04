@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import os
 
 class Track():
-    def __init__(self, name, path, duration: 24000):
+    def __init__(self, name, path, duration= 24000):
         self.name = name
         self.duration = duration
         # self.track = track
@@ -28,15 +28,18 @@ class MyMusDB():
         train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
 
         if set_type == "train":
-            for file_name in train_files[:8]:
+            # for file_name in train_files[:8]:
+            for file_name in train_files:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "valid":
-            for file_name in valid_files[:4]:
+            # for file_name in valid_files[:4]:
+            for file_name in valid_files:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "test":
-            for file_name in test_files[:4]:
+            # for file_name in test_files[:4]:
+            for file_name in test_files:
                 file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
 
