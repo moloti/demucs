@@ -28,7 +28,7 @@ parser.add_argument("--data_stride",
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
 parser.add_argument("--samples",
-                        default=8000 * 3,
+                        default=8000 * 6,
                         type=int,
                         help="number of samples to feed in")
 parser.add_argument("-d",

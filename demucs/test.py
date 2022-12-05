@@ -98,7 +98,7 @@ def evaluate(model,
             if workers:
                 pending = pending.result()
             sdr, isr, sir, sar = pending
-            track_store = museval.TrackStore(win=8000*3, hop=8000*3, track_name=track_name)
+            track_store = museval.TrackStore(win=8000*6, hop=8000*6, track_name=track_name)
             for idx, target in enumerate(source_names):
                 values = {
                     "SDR": sdr[idx].tolist(),
