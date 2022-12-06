@@ -148,7 +148,7 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
     metrics = [pesq, stoi]
     pesq_final, stoi_final = average([m/cnt for m in metrics], cnt)
     logger.info(f'Test set performance:PESQ={pesq_final}, STOI={stoi_final}.')
-    return stoi_final, stoi_final
+    return pesq_final, stoi_final
 
 
 def _estimate_and_run_metrics(references, estimates, args):
