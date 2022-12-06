@@ -78,6 +78,8 @@ def evaluate(model,
             estimates = apply_model(model, mix.to(device), shifts=shifts, split=split)
             estimates = estimates * std_track + mean_track
 
+            estimates = estimates.transpose(1, 2)
+
             # estimates = estimates.transpose(1, 2)
             references = track
             references = references.numpy()

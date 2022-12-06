@@ -29,7 +29,7 @@
       "justMyCode": true,
       "args": [
         "--musdb",
-        "/Users/dg/Documents/Development/02456_Deep_Learning/LibriMix_Sample_With_Test/Libri2Mix/wav8k/max",
+        "/Users/dg/Documents/Development/02456_Deep_Learning/LibriMix_Sample_With_Test/Libri2Mix/wav8k/min",
         "-b",
         "4",
         "--samplerate",
@@ -46,10 +46,12 @@
       "program": "demucs/evaluate.py",
       "justMyCode": true,
       "args": [
-        "--audio_dir",
-        "/Users/dg/Documents/Development/02456_Deep_Learning/LibriMix_Sample_With_Test/Libri2Mix/wav8k/max",
+        "--musdb",
+        "/Users/dg/Documents/Development/02456_Deep_Learning/LibriMix_Sample_With_Test/Libri2Mix/wav8k/min",
         "--model_path",
-        "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/models/demucs.th",
+        "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/models/musdb=min_epochs=1_batch_size=24.th",
+        "--evals",
+        "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/evals"
       ]
     },
     {

@@ -2,14 +2,18 @@
 import argparse
 from concurrent.futures import ProcessPoolExecutor
 from fractions import Fraction
+from scipy.io import wavfile
 import json
 import logging
+from pathlib import Path
 import sys
 sys.path.append('/Users/dg/Documents/Development/02456_Deep_Learning/demucs')
 
+from demucs.my_musdb import MyMusDB
+
 import tqdm
 from demucs.compressed import StemsSet, StemsSetValidation, get_musdb_tracks, get_validation_tracks
-from demucs.utils import load_model
+from demucs.utils import apply_model, load_model
 from torch.utils.data import DataLoader
 import torch.hub
 from pesq import pesq
@@ -17,9 +21,12 @@ from pystoi import stoi
 
 parser = argparse.ArgumentParser('demucs.evaluate', description='Evaluate Model Performance')
 
-parser.add_argument('--audio_dir', help='The path to the directory where the clean and the noisy audio files are stored')
-parser.add_argument("-m", "--model_path", help="Path to local trained model.")
-parser.add_argument("--eval_folder", help="Path to where the training results are stored.")
+parser.add_argument('--musdb', help='The path to the directory where the clean and the noisy audio files are stored')
+parser.add_argument('--dataset_type', default="dev", help='Choose between the different dataset sizes and types: dev, test, train-100, train-360')
+parser.add_argument("--model_path", help="Path to local trained model.")
+parser.add_argument("--evals", help="Path to where the testing results are stored.")
+parser.add_argument('--no_pesq', action="store_false", dest="pesq", default=True,
+                    help="Don't compute PESQ.")
 parser.add_argument("--samplerate", type=int, default=8000)
 parser.add_argument("--audio_channels", type=int, default=1)
 parser.add_argument("--data_stride",
@@ -44,16 +51,26 @@ rank = 0
 world_size = 1
             
 
-def evaluate(args, workers=2, model=None, data_loader=None):
+def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=False, save=False):
     pesq = 0
     stoi = 0
     cnt = 0
     updates = 5
 
-    # output_dir = eval_folder / "results"
-    # output_dir.mkdir(exist_ok=True, parents=True)
-    # json_folder = eval_folder / "results/test"
-    # json_folder.mkdir(exist_ok=True, parents=True)
+    if args.evals is None:
+        eval_folder = args.musdb
+    else:
+        eval_folder = Path(args.evals)
+
+    output_dir = eval_folder / "results"
+    output_dir.mkdir(exist_ok=True, parents=True)
+    json_folder = eval_folder / "results/test"
+    json_folder.mkdir(exist_ok=True, parents=True)
+
+    if(args.dataset_type):
+        root_folder = args.dataset_type
+    else:
+        root_folder = "dev"
 
     duration = Fraction(args.samples + args.data_stride, args.samplerate)
     stride = Fraction(args.data_stride, args.samplerate)
@@ -65,43 +82,59 @@ def evaluate(args, workers=2, model=None, data_loader=None):
     model.eval()
 
     # Load data
-    if data_loader is None & args.audio_dir:
-        dataset = StemsSetValidation(get_validation_tracks(args.audio_dir, subsets="clean"),
-                            get_validation_tracks(args.audio_dir, subsets="noisy"),
-                            folder_path=args.audio_dir,
-                            #metadata,
+    if data_loader is None and args.musdb:
+        test_set_names = MyMusDB(args.musdb, "test", path=root_folder)
+        test_set = StemsSet(get_musdb_tracks(args.musdb, subsets="test", root_folder=root_folder),
+                            folder_path=args.musdb,
                             duration=duration,
                             stride=stride,
                             samplerate=args.samplerate,
                             channels=args.audio_channels)
 
-        loader = DataLoader(dataset, batch_size=1, num_workers=2)
-    pendings = []
+        #loader = DataLoader(dataset, batch_size=1, num_workers=2)
 
+    for p in model.parameters():
+        p.requires_grad = False
+        p.grad = None
+
+    pendings = []
 
     with ProcessPoolExecutor(workers or 1) as pool:
         for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout):
-
-            for i, streams in enumerate(tq):
                 
-                noisy_streams = [x["noisy"]["streams"].to(args.device) for x in streams]
-                clean_streams = [x["clean"]["streams"].to(args.device) for x in streams]
+            track, mean_track, std_track = test_set[index]
+            musdb_track = test_set_names.tracks[index]
+
+            mix = track.sum(dim=0)
+            
+            estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
+            estimates = estimates * std_track + mean_track
+
+            references = track
+            references = references.numpy()
+            estimates = estimates.cpu().numpy()
+
+            if save:
+                folder = eval_folder / "wav/test"
+                folder.mkdir(exist_ok=True, parents=True)
+                for estimate in estimates:
+                    wavfile.write(str(folder / (track.name + ".wav")), args.data_stride, estimate)
+            
+            if args.device == 'cpu':
+                pendings.append((track.name, pool.submit(_estimate_and_run_metrics, references, estimates, args)))
+            else:
+                pendings.append(pool.submit(_run_metrics, references, estimates, args))
+            cnt += references.shape[0]
+            del references, mix, estimates, track
 
 
-                if args.device == 'cpu':
-                    pendings.append(pool.submit(_estimate_and_run_metrics, clean_streams, model, noisy_streams, args))
-                else:
-                    estimate = get_estimate(model, noisy_streams, args)
-                    estimate = estimate.cpu()
-                    clean = clean.cpu()
-                    pendings.append(
-                        pool.submit(_run_metrics, clean_streams, estimate, args, model.sample_rate))
-                cnt += clean_streams.shape[0]
+        for pending in tqdm.tqdm(pendings, file=sys.stdout):
+            pesq_i, stoi_i = pending.result()
+            pesq += pesq_i
+            stoi += stoi_i
+    
 
-            for pending in pendings:
-                pesq_i, stoi_i = pending.result()
-                pesq += pesq_i
-                stoi += stoi_i
+
 
     metrics = [pesq, stoi]
     pesq_final, stoi_final = average([m/cnt for m in metrics], cnt)
@@ -109,27 +142,18 @@ def evaluate(args, workers=2, model=None, data_loader=None):
     return stoi_final, stoi_final
 
 
-
-def get_estimate(model, noisy, args):
-    torch.set_num_threads(1)
-    with torch.no_grad():
-            estimate = model(noisy)
-            estimate = (1 - args.dry) * estimate + args.dry * noisy
-    return estimate
-
-def _estimate_and_run_metrics(clean, model, noisy, args):
-    estimate = get_estimate(model, noisy, args)
-    return _run_metrics(clean, estimate, args, sr=model.sample_rate)
+def _estimate_and_run_metrics(references, estimates, args):
+    return _run_metrics(references, estimates, args)
 
 
-def _run_metrics(clean, estimate, args, sr):
-    estimate = estimate.numpy()[:, 0]
-    clean = clean.numpy()[:, 0]
+def _run_metrics(references, estimates, args):
+    estimates = estimates[:, 0]
+    references = references[:, 0]
     if args.pesq:
-        pesq_i = get_pesq(clean, estimate, sr=sr)
+        pesq_i = get_pesq(references, estimates, sr=args.samplerate)
     else:
         pesq_i = 0
-    stoi_i = get_stoi(clean, estimate, sr=sr)
+    stoi_i = get_stoi(references, estimates, sr=args.samplerate)
     return pesq_i, stoi_i
         
 
@@ -143,7 +167,7 @@ def get_pesq(ref_sig, out_sig, sr):
     """
     pesq_val = 0
     for i in range(len(ref_sig)):
-        pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'wb')
+        pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'nb')
     return pesq_val
 
 
