@@ -16,7 +16,7 @@ from demucs.compressed import StemsSet, StemsSetValidation, get_musdb_tracks, ge
 from demucs.utils import apply_model, load_model
 from torch.utils.data import DataLoader
 import torch.hub
-from pesq import pesq
+from pesq import pesq, NoUtterancesError
 from pystoi import stoi
 
 parser = argparse.ArgumentParser('demucs.evaluate', description='Evaluate Model Performance')
@@ -109,18 +109,20 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
             
             estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
             estimates = estimates * std_track + mean_track
-            estimates = estimates.transpose(1, 2)
 
+            if save and '2902-9008-0000_6241-61943-0013.wav' in musdb_track.name:
+                estimates_trans = estimates.transpose(1, 2)
+                estimates_trans = estimates_trans.cpu().numpy()
+                folder = eval_folder / "wav/test"
+                folder.mkdir(exist_ok=True, parents=True)
+                for estimate in estimates_trans:
+                    wavfile.write(str(folder / (musdb_track.name)), args.data_stride, estimate)
+            
             references = track
             references = references.numpy()
             estimates = estimates.cpu().numpy()
 
-            if save and '2902-9008-0000_6241-61943-0013.wav' in musdb_track.name:
-                folder = eval_folder / "wav/test"
-                folder.mkdir(exist_ok=True, parents=True)
-                for estimate in estimates:
-                    wavfile.write(str(folder / (musdb_track.name)), args.data_stride, estimate)
-            
+
             if args.device == 'cpu':
                 pendings.append((musdb_track.name, pool.submit(_estimate_and_run_metrics, references, estimates, args)))
             else:
@@ -132,9 +134,13 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
         for pending in tqdm.tqdm(pendings, file=sys.stdout):
             # Access the future and the name of the track
             track_name, future = pending
-            (pesq_i, stoi_i)  = future.result()
-            pesq += pesq_i
-            stoi += stoi_i
+            try: 
+                (pesq_i, stoi_i)  = future.result()
+                pesq += pesq_i
+                stoi += stoi_i
+            except NoUtterancesError:
+                logger.warning(f"Track {track_name} has no utterances, skipping")
+                continue
     
 
 
