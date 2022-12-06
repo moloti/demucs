@@ -51,7 +51,7 @@ rank = 0
 world_size = 1
             
 
-def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=False, save=False):
+def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=False, save=True):
     pesq = 0
     stoi = 0
     cnt = 0
@@ -109,27 +109,30 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
             
             estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
             estimates = estimates * std_track + mean_track
+            estimates = estimates.transpose(1, 2)
 
             references = track
             references = references.numpy()
             estimates = estimates.cpu().numpy()
 
-            if save:
+            if save and '2902-9008-0000_6241-61943-0013.wav' in musdb_track.name:
                 folder = eval_folder / "wav/test"
                 folder.mkdir(exist_ok=True, parents=True)
                 for estimate in estimates:
-                    wavfile.write(str(folder / (track.name + ".wav")), args.data_stride, estimate)
+                    wavfile.write(str(folder / (musdb_track.name)), args.data_stride, estimate)
             
             if args.device == 'cpu':
-                pendings.append((track.name, pool.submit(_estimate_and_run_metrics, references, estimates, args)))
+                pendings.append((musdb_track.name, pool.submit(_estimate_and_run_metrics, references, estimates, args)))
             else:
-                pendings.append(pool.submit(_run_metrics, references, estimates, args))
+                pendings.append((musdb_track.name, pool.submit(_run_metrics, references, estimates, args)))
             cnt += references.shape[0]
             del references, mix, estimates, track
 
 
         for pending in tqdm.tqdm(pendings, file=sys.stdout):
-            pesq_i, stoi_i = pending.result()
+            # Access the future and the name of the track
+            track_name, future = pending
+            (pesq_i, stoi_i)  = future.result()
             pesq += pesq_i
             stoi += stoi_i
     
