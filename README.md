@@ -1,12 +1,8 @@
 # Demucs Music Source Separation
 
-**This is old version of Demucs**: this is kept for compatibility, as well as providing the initial code and data for the first version of the paper.
-To get to the new Demucs, go to [the master branch](https://github.com/facebookresearch/demucs/).
-
-We provide an implementation of Demucs and Conv-Tasnet for music source separation on the [MusDB][musdb] dataset.
-They can separate drums, bass and vocals from the rest with state-of-the-art results, surpassing previous waveform or spectrogram based methods.
-The architecture and results obtained are detailed in our paper
-[Music Source Separation in the waveform domain][demucs_arxiv].
+[![Support Ukraine](https://img.shields.io/badge/Support-Ukraine-FFD500?style=flat&labelColor=005BBB)](https://opensource.fb.com/support-ukraine) 
+![tests badge](https://github.com/facebookresearch/demucs/workflows/tests/badge.svg)
+![linter badge](https://github.com/facebookresearch/demucs/workflows/linter/badge.svg)
 
 This is the 3rd release of Demucs (v3), featuring hybrid source separation.
 **For the waveform only Demucs (v2):** [Go this commit][demucs_v2].
@@ -265,9 +261,11 @@ Demucs is released under the MIT license as found in the [LICENSE](LICENSE) file
 [musdb]: https://sigsep.github.io/datasets/musdb.html
 [openunmix]: https://github.com/sigsep/open-unmix-pytorch
 [mmdenselstm]: https://arxiv.org/abs/1805.02410
-[demucs_arxiv]: https://hal.archives-ouvertes.fr/hal-02379796v1/document
-[musevalpth]: museval_torch.py
-[tasnet]: https://github.com/kaituoxu/Conv-TasNet
-[audio]: https://ai.honu.io/papers/demucs/index.html
+[demucs_v2]: https://github.com/facebookresearch/demucs/tree/v2
 [spleeter]: https://github.com/deezer/spleeter
 [soundcloud]: https://soundcloud.com/honualx/sets/source-separation-in-the-waveform-domain
+[d3net]: https://arxiv.org/abs/2010.01733
+[mdx]: https://www.aicrowd.com/challenges/music-demixing-challenge-ismir-2021
+[kuielab]: https://github.com/kuielab/mdx-net-submission
+[decouple]: https://arxiv.org/abs/2109.05418
+[mdx_submission]: https://github.com/adefossez/mdx21_demucs

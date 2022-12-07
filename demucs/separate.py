@@ -11,45 +11,11 @@ import subprocess
 
 from dora.log import fatal
 import torch as th
-import tqdm
-from scipy.io import wavfile
+import torchaudio as ta
 
-from .audio import AudioFile
-from .utils import apply_model, load_model
-
-BASE_URL = "https://dl.fbaipublicfiles.com/demucs/v2.0/"
-PRETRAINED_MODELS = {
-    'demucs.th': 'f6c4148ba0dc92242d82d7b3f2af55c77bd7cb4ff1a0a3028a523986f36a3cfd',
-    'demucs.th.gz': 'e70767bfc9ce62c26c200477ea29a20290c708b210977e3ef2c75ace68ea4be1',
-    'demucs_extra.th': '3331bcc5d09ba1d791c3cf851970242b0bb229ce81dbada557b6d39e8c6a6a87',
-    'demucs_extra.th.gz': 'f9edcf7fe55ea5ac9161c813511991e4ba03188112fd26a9135bc9308902a094',
-    'light.th': '79d1ee3c1541c729c552327756954340a1a46a11ce0009dea77dc583e4b6269c',
-    'light.th.gz': '94c091021d8cdee0806b6df0afbeb59e73e989dbc2c16d2c1c370b2edce774fd',
-    'light_extra.th': '9e9b4af564229c80cc73c95d02d2058235bb054c6874b3cba4d5b26943a5ddcb',
-    'light_extra.th.gz': '48bb1a85f5ad0ca400512fcd0dcf91ec94e886a1602a552ee32133f5e09aeae0',
-    'tasnet.th': 'be56693f6a5c4854b124f95bb9dd043f3167614898493738ab52e25648bec8a2',
-    'tasnet_extra.th': '0ccbece3acd98785a367211c9c35b1eadae8d148b0d37fe5a5494d6d335269b5',
-}
-
-
-def download_file(url, target):
-    """
-    Download a file with a progress bar.
-
-    Arguments:
-        url (str): url to download
-        target (Path): target path to write to
-        sha256 (str or None): expected sha256 hexdigest of the file
-    """
-    def _download():
-        response = requests.get(url, stream=True)
-        total_length = int(response.headers.get('content-length', 0))
-
-        with tqdm.tqdm(total=total_length, ncols=120, unit="B", unit_scale=True, position=0, leave=True) as bar:
-            with open(target, "wb") as output:
-                for data in response.iter_content(chunk_size=4096):
-                    output.write(data)
-                    bar.update(len(data))
+from .apply import apply_model, BagOfModels
+from .audio import AudioFile, convert_audio, save_audio
+from .pretrained import get_model_from_args, add_model_flags, ModelLoadingError
 
 
 def load_track(track, audio_channels, samplerate):
@@ -183,7 +149,6 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     print(f"Separated tracks will be stored in {out.resolve()}")
     for track in args.tracks:
-        print("here")
         if not track.exists():
             print(
                 f"File {track} does not exist. If the path contains spaces, "
@@ -191,9 +156,8 @@ def main():
                 file=sys.stderr)
             continue
         print(f"Separating track {track}")
-        wav, _, _ = AudioFile(track, "somename").read(streams=0, samplerate=model.samplerate, channels=model.audio_channels).to(args.device)
-        # Round to nearest short integer for compatibility with how MusDB load audio with stempeg.
-        wav = (wav * 2**15).round() / 2**15
+        wav = load_track(track, model.audio_channels, model.samplerate)
+
         ref = wav.mean(0)
         wav = (wav - ref.mean()) / ref.std()
         sources = apply_model(model, wav[None], device=args.device, shifts=args.shifts,
