@@ -106,7 +106,7 @@ def validate_model(epoch,
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
-        current_loss += loss.item() / (index +1)
+        current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
 
     if world_size > 1:
