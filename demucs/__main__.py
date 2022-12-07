@@ -167,6 +167,7 @@ def main():
     stride = Fraction(args.data_stride, args.samplerate)
     train_set = StemsSet(get_musdb_tracks(root=args.musdb, subsets="train", root_folder="train-100"),
                             folder_path=args.musdb,
+                            root_folder="train-100",
                             #metadata,
                             duration=duration,
                             stride=stride,
@@ -174,6 +175,7 @@ def main():
                             channels=args.audio_channels)
     valid_set = StemsSet(get_musdb_tracks(args.musdb, subsets="valid", root_folder="dev"),
                             folder_path=args.musdb,
+                            root_folder="dev",
                             duration=duration,
                             stride=stride,
                             #metadata,
