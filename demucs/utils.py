@@ -95,6 +95,72 @@ def sizeof_fmt(num: float, suffix: str = 'B'):
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
 
+def human_seconds(seconds, display='.2f'):
+    """
+    Given `seconds` seconds, return human readable duration.
+    """
+    value = seconds * 1e6
+    ratios = [1e3, 1e3, 60, 60, 24]
+    names = ['us', 'ms', 's', 'min', 'hrs', 'days']
+    last = names.pop(0)
+    for name, ratio in zip(names, ratios):
+        if value / ratio < 0.3:
+            break
+        value /= ratio
+        last = name
+    return f"{format(value, display)} {last}"
+
+
+def apply_model(model, mix, shifts=None, split=False, progress=False):
+    """
+    Apply model to a given mixture.
+
+    Args:
+        shifts (int): if > 0, will shift in time `mix` by a random amount between 0 and 0.5 sec
+            and apply the oppositve shift to the output. This is repeated `shifts` time and
+            all predictions are averaged. This effectively makes the model time equivariant
+            and improves SDR by up to 0.2 points.
+        split (bool): if True, the input will be broken down in 8 seconds extracts
+            and predictions will be performed individually on each and concatenated.
+            Useful for model with large memory footprint like Tasnet.
+        progress (bool): if True, show a progress bar (requires split=True)
+    """
+    channels, length = mix.size()
+    device = mix.device
+    if split:
+        out = th.zeros(4, channels, length, device=device)
+        shift = model.samplerate * 10
+        offsets = range(0, length, shift)
+        scale = 10
+        if progress:
+            offsets = tqdm.tqdm(offsets, unit_scale=scale, ncols=120, unit='seconds', position=0, leave=True)
+        for offset in offsets:
+            chunk = mix[..., offset:offset + shift]
+            chunk_out = apply_model(model, chunk, shifts=shifts)
+            out[..., offset:offset + shift] = chunk_out
+            offset += shift
+        return out
+    elif shifts:
+        max_shift = int(model.samplerate / 2)
+        mix = F.pad(mix, (max_shift, max_shift))
+        offsets = list(range(max_shift))
+        random.shuffle(offsets)
+        out = 0
+        for offset in offsets[:shifts]:
+            shifted = mix[..., offset:offset + length + max_shift]
+            shifted_out = apply_model(model, shifted)
+            out += shifted_out[..., max_shift - offset:max_shift - offset + length]
+        out /= shifts
+        return out
+    else:
+        valid_length = model.valid_length(length)
+        delta = valid_length - length
+        padded = F.pad(mix, (delta // 2, delta - delta // 2))
+        with th.no_grad():
+            out = model(padded.unsqueeze(0))[0]
+        return center_trim(out, mix)
+
+
 @contextmanager
 def temp_filenames(count: int, delete=True):
     names = []
