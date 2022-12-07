@@ -28,27 +28,27 @@ class MyMusDB():
         # I path is containing dev or tain-100 or train-360
 
 
-        if 'dev' in path or 'train-100' in path or 'train-360' in path:
-            train_valid_files, test_files = train_test_split(files, test_size=0.1, random_state=42)
-            train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
-        elif(path == 'test'):
-            files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
-            test_files = files
+        # if 'dev' in path or 'train-100' in path or 'train-360' in path:
+        #     train_valid_files, test_files = train_test_split(files, test_size=0.1, random_state=42)
+        #     train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
+        # elif(path == 'test'):
+        #     files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
+        #     test_files = files
 
 
         if set_type == "train":
             # for file_name in train_files[:8]:
-            for file_name in train_files:
+            for file_name in files:
                 file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "valid":
             # for file_name in valid_files[:4]:
-            for file_name in valid_files:
+            for file_name in files:
                 file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "test":
             # for file_name in test_files[:4]:
-            for file_name in test_files:
+            for file_name in files:
                 file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
 
@@ -72,6 +72,3 @@ class ValidationData():
             for file_name in os.listdir(os.path.join(self.root_path, Path("dev/s1"))):
                 file_path = os.path.join(self.root_path, Path("dev/s1"), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
-
-        
-
