@@ -35,7 +35,7 @@ parser.add_argument("--data_stride",
                         type=int,
                         help="Stride for chunks, shorter = longer epochs")
 parser.add_argument("--samples",
-                        default=8000 * 3,
+                        default=8000 * 6,
                         type=int,
                         help="number of samples to feed in")
 parser.add_argument("-d",
@@ -100,7 +100,7 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
     pendings = []
 
     with ProcessPoolExecutor(workers or 1) as pool:
-        for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout):
+        for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout, position=0, leave=True):
                 
             track, mean_track, std_track = test_set[index]
             musdb_track = test_set_names.tracks[index]
@@ -131,7 +131,7 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
             del references, mix, estimates, track
 
 
-        for pending in tqdm.tqdm(pendings, file=sys.stdout):
+        for pending in tqdm.tqdm(pendings, file=sys.stdout, position=0, leave=True):
             # Access the future and the name of the track
             track_name, future = pending
             try: 

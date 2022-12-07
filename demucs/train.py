@@ -19,7 +19,6 @@ def train_model(epoch,
                 dataset,
                 model,
                 criterion,
-                stft_loss,
                 optimizer,
                 augment,
                 repeat=1,
@@ -40,45 +39,41 @@ def train_model(epoch,
     else:
         loader = DataLoader(dataset, batch_size=batch_size, num_workers=workers, shuffle=True)
     current_loss = 0
-    for repetition in range(repeat):
-        tq = tqdm.tqdm(loader,
-                       ncols=120,
-                       desc=f"[{epoch:03d}] train ({repetition + 1}/{repeat})",
-                       leave=False,
-                       file=sys.stdout,
-                       unit=" batch")
-        total_loss = 0
-        for idx, (streams, _, _) in enumerate(tq):
-            # if len(streams) < batch_size:
-            #     # skip uncomplete batch for augment.Remix to work properly
-            #     continue
-            print(device)
-            streams = streams.to(device)
-            sources = streams  # [:, 1:]
-            sources = augment(sources) # y
-            mix = sources.sum(dim=1) # x
-            estimates = model(mix) # pred_y
-            sources = center_trim(sources, estimates)
-            loss = criterion(estimates, sources)
-            estimates = estimates[:, 1:]
-            estimates = estimates.sum(dim=1)
-            if stft_loss:
-                # Check if the input needs to be squeezed
-                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
-                loss += sc_loss + mag_loss
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+    # for repetition in range(repeat):
+    tq = tqdm.tqdm(loader,
+                    ncols=120,
+                    desc=f"[{epoch:03d}] train ({1}/{repeat})",
+                    leave=True,
+                    position=0,
+                    file=sys.stdout,
+                    unit=" batch")
+    total_loss = 0
+    for idx, (streams, _, _) in enumerate(tq):
+        if len(streams) < batch_size:
+            # skip uncomplete batch for augment.Remix to work properly
+            continue
+        streams = streams.to(device)
+        sources = streams  # [:, 1:]
+        sources = augment(sources) # y
+        mix = sources.sum(dim=1) # x
+        estimates = model(mix) # pred_y
+        sources = center_trim(sources, estimates)
+        loss = criterion(estimates, sources)
+        estimates = estimates[:, 1:]
+        estimates = estimates.sum(dim=1)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-            total_loss += loss.item()
-            current_loss = total_loss / (1 + idx)
-            tq.set_postfix(loss=f"{current_loss:.4f}")
+        total_loss += loss.item()
+        current_loss = total_loss / (1 + idx)
+        tq.set_postfix(loss=f"{current_loss:.4f}")
 
-            # free some space before next round
-            del streams, sources, mix, estimates, loss
+        # free some space before next round
+        del streams, sources, mix, estimates, loss
 
-        if world_size > 1:
-            sampler.epoch += 1
+    if world_size > 1:
+        sampler.epoch += 1
 
     if world_size > 1:
         current_loss = average_metric(current_loss)
@@ -89,7 +84,6 @@ def validate_model(epoch,
                    dataset,
                    model,
                    criterion,
-                   stft_loss,
                    device="cpu",
                    rank=0,
                    world_size=1,
@@ -99,27 +93,22 @@ def validate_model(epoch,
     tq = tqdm.tqdm(indexes,
                    ncols=120,
                    desc=f"[{epoch:03d}] valid",
-                   leave=False,
+                   leave=True,
+                   position=0,
                    file=sys.stdout,
                    unit=" track")
     current_loss = 0
     for index in tq:
         streams,  _, _ = dataset[index]
-        # first five minutes to avoid OOM on --upsample models
-        # streams = streams[..., :15_000_000]
         streams = streams.to(device)
-        sources = streams  # [:, 1:]
+        sources = streams  #
         mix = sources.sum(dim=0) # x
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         loss = criterion(estimates, sources)
-        if stft_loss:
-                # Check if the input needs to be squeezed
-                sc_loss, mag_loss = stft_loss(estimates, sources)
-                loss += sc_loss + mag_loss
-        current_loss += loss.item() / len(indexes)
+        current_loss += loss.item() / (index +1)
         del estimates, streams, sources
 
     if world_size > 1:
-        current_loss = average_metric(current_loss, len(indexes))
+        current_loss = average_metric(current_loss)
     return current_loss

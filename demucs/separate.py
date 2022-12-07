@@ -45,7 +45,7 @@ def download_file(url, target):
         response = requests.get(url, stream=True)
         total_length = int(response.headers.get('content-length', 0))
 
-        with tqdm.tqdm(total=total_length, ncols=120, unit="B", unit_scale=True) as bar:
+        with tqdm.tqdm(total=total_length, ncols=120, unit="B", unit_scale=True, position=0, leave=True) as bar:
             with open(target, "wb") as output:
                 for data in response.iter_content(chunk_size=4096):
                     output.write(data)

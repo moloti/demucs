@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import os
 
 class Track():
-    def __init__(self, name, path, duration=24000):
+    def __init__(self, name, path, duration=48000):
         self.name = name
         self.duration = duration
         # self.track = track
