@@ -106,7 +106,7 @@ def validate_model(epoch,
         streams,  _, _ = dataset[index]
         streams = streams.to(device)
         sources = streams  #
-        mix = sources.sum(dim=0) # x 48000
+        mix = sources.sum(dim=0) # x
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         # sources = center_trim(sources, estimates)
