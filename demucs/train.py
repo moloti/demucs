@@ -11,6 +11,7 @@ import inspect
 from demucs.stft_loss import MultiResolutionSTFTLoss
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from torch.nn import functional as F
 
 from .utils import apply_model, average_metric, center_trim
 
@@ -54,10 +55,13 @@ def train_model(epoch,
             continue
         streams = streams.to(device)
         sources = streams  # [:, 1:]
-        sources = augment(sources) # y
+        # sources = augment(sources) # y 48000 -> 400000
         mix = sources.sum(dim=1) # x
-        estimates = model(mix) # pred_y
-        sources = center_trim(sources, estimates)
+        valid_length = model.valid_length(mix.shape[-1])
+        delta = valid_length - mix.shape[-1]
+        padded = F.pad(mix, (delta // 2, delta - delta // 2))
+        estimates = model(padded) # pred_y 36524
+        estimates = center_trim(estimates, sources)
         loss = criterion(estimates, sources)
         estimates = estimates[:, 1:]
         estimates = estimates.sum(dim=1)
@@ -102,9 +106,10 @@ def validate_model(epoch,
         streams,  _, _ = dataset[index]
         streams = streams.to(device)
         sources = streams  #
-        mix = sources.sum(dim=1) # x
+        mix = sources.sum(dim=0) # x 48000
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
+        # sources = center_trim(sources, estimates)
         loss = criterion(estimates, sources)
         current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
