@@ -1,5 +1,6 @@
 __pycache__
 *.egg-info
+settings.json
 build
 dist
 Session.vim
@@ -7,5 +8,7 @@ Session.vim
 trash
 tex
 demucs_release
+*launch.json
 LibriMix_Sample_With_Test/
 .DS_Store
+*.th

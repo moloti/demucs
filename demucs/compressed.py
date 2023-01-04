@@ -7,15 +7,15 @@
 import json
 from concurrent import futures
 
-from demucs.my_musdb import MyMusDB
+from demucs.my_musdb import MyMusDB, ValidationData
 
 
 from .audio import AudioFile
 
 
-def get_musdb_tracks(root, subsets):
+def get_musdb_tracks(root, subsets, root_folder="dev"):
     # print(root, subsets)
-    mus = MyMusDB(root, subsets)
+    mus = MyMusDB(root, subsets, root_folder)
     # print(mus.tracks)
     # TODO create a functionthat would return a dictionary of filenames and their paths
     return {track.name: (track.path, track.duration) for track in mus.tracks}
@@ -23,8 +23,17 @@ def get_musdb_tracks(root, subsets):
     # return {track.name: track.path for track in mus}
 
 
+
+def get_validation_tracks(root, subsets):
+    validation_set = ValidationData(root, subsets)
+    tracks = {}
+    for track in validation_set.tracks:
+        tracks[track.name] = {"path": track.path, "duration": track.duration}
+    return tracks
+
+
 class StemsSet:
-    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=8000, channels=1):
+    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=8000, channels=1, root_folder="dev"):
 
         self.metadata = []
         for name, (path, duration) in tracks.items():
@@ -35,6 +44,7 @@ class StemsSet:
             meta["name"] = name
             meta["duration"] = duration
             meta["folder_path"] = folder_path
+            meta["root_folder"] = root_folder
             self.metadata.append(meta)
             # if duration is not None and meta["duration"] < duration:
             #     raise ValueError(f"Track {name} duration is too small {meta['duration']}")
@@ -67,11 +77,89 @@ class StemsSet:
             if index >= examples:
                 index -= examples
                 continue
-            streams, mean_streams,std_streams = AudioFile(meta["folder_path"], meta["name"]).read(seek_time=index * self.stride,
+            streams, mean_streams,std_streams = AudioFile(meta["folder_path"], meta["name"], meta["root_folder"]).read(seek_time=index * self.stride,
                                                    duration=self.duration,
                                                    channels=self.channels,
                                                    samplerate=self.samplerate)
             return (streams - mean_streams) / std_streams, mean_streams, std_streams
+
+class StemsSetValidation:
+    def __init__(self, tracks_clean, tracks_noisy, folder_path, duration=None, stride=1, samplerate=8000, channels=1):
+
+        self.metadata = []
+        self.folder_path = folder_path
+        self.datasets = {}
+        self.datasets["clean"] = tracks_clean
+        self.datasets["noisy"] = tracks_noisy
+        tracks_clean_keys = list(tracks_clean)
+        tracks_noisy_keys = list(tracks_noisy)
+
+        for idx, (tracks_clean_key, tracks_noisy_key) in enumerate(zip(tracks_clean_keys, tracks_noisy_keys)):
+            meta = self.create_metadata_set(tracks_clean_key, tracks_noisy_key)
+            self.metadata.append(meta)
+
+        self.metadata.sort(key=lambda x: x["clean"]["name"])
+        self.duration = duration
+        self.stride = stride
+        self.channels = channels
+        self.samplerate = samplerate
+    
+    def create_metadate_item(self, track_key, dataset_type):
+            meta = {}
+            track = self.datasets[dataset_type][track_key]
+            meta["path"] = track.path
+            meta["name"] = track_key
+            meta["duration"] = track.duration
+            meta["folder_path"] = self.folder_path
+            return meta
+
+    
+    def create_metadata_set(self, track_clean_key, track_noisy_key):
+            meta_set = {}
+            meta_set["clean"] = self.create_metadate_item(track_clean_key, "clean")
+            meta_set["noisy"] = self.create_metadate_item(track_noisy_key, "noisy")
+            return meta_set
+
+
+    def __len__(self):
+        return sum(self._examples_count(m) for m in self.metadata)
+
+    def _examples_count(self, meta):
+        if self.duration is None:
+            return 1
+        else:
+            return int((meta["clean"]["duration"] - self.duration) // self.stride + 1)
+
+    def track_metadata(self, index):
+        for meta in self.metadata:
+            examples = self._examples_count(meta)
+            if index >= examples:
+                index -= examples
+                continue
+            return meta
+
+    def convert_item(self, meta, index, dataset_type):
+        stream_item = {}
+        streams, mean_streams,std_streams = AudioFile(meta[dataset_type]["folder_path"], meta[dataset_type]["name"], meta[dataset_type]["root_folder"]).read(seek_time=index * self.stride,
+                                                   duration=self.duration,
+                                                   channels=self.channels,
+                                                   samplerate=self.samplerate)
+        stream_item["streams"] = (streams - mean_streams) / std_streams
+        stream_item["mean_streams"] = mean_streams
+        stream_item["std_streams"] = std_streams
+        return stream_item
+
+
+    def __getitem__(self, index):
+        for meta in self.metadata:
+            examples = self._examples_count(meta)
+            if index >= examples:
+                index -= examples
+                continue
+            stream_item = {}
+            stream_item["clean"] = self.convert_item(meta, index, "clean")
+            stream_item["noisy"] = self.convert_item(meta, index, "noisy")
+            return stream_item
 
 
 def _get_track_metadata(path, filename):

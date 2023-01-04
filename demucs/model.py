@@ -74,7 +74,7 @@ class Demucs(nn.Module):
                  growth=2.,
                  lstm_layers=2,
                  context=3,
-                 samplerate=24000):
+                 samplerate=48000):
         """
         Args:
             sources (int): number of sources to separate

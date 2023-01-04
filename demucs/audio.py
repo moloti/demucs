@@ -27,10 +27,11 @@ class AudioFile:
     Allows to read audio from any format supported by ffmpeg, as well as resampling or
     converting to mono on the fly. See :method:`read` for more details.
     """
-    def __init__(self, folder_path: Path, file_name: Path):
+    def __init__(self, folder_path: Path, file_name: Path, root_file: str = "dev"):
         self.folder_path = Path(folder_path)
         self.file_name = Path(file_name)
-        self.mix_file_path = os.path.join(folder_path, Path("dev/mix_single"), file_name)
+        self.root_file = root_file
+        self.mix_file_path = os.path.join(folder_path, Path(root_file + "/mix_single"), file_name)
         self._info = None
 
     def __repr__(self):
@@ -44,8 +45,8 @@ class AudioFile:
     @property
     def info(self):
         if self._info is None:
-            self._info = _read_info(os.path.join(self.folder_path, Path("dev/s1"), self.file_name))
-            noise_info= _read_info(os.path.join(self.folder_path, Path("dev/noise"), self.file_name))
+            self._info = _read_info(os.path.join(self.folder_path, Path(self.root_file + "/s1"), self.file_name))
+            noise_info= _read_info(os.path.join(self.folder_path, Path(self.root_file + "/noise"), self.file_name))
             self._info["streams"].extend(noise_info["streams"])
         return self._info
 
@@ -104,7 +105,7 @@ class AudioFile:
         single = not isinstance(streams, np.ndarray)
         if single:
             streams = [streams]
-        duration =3
+        duration = 6
         if duration is None:
             target_size = None
             query_duration = None
@@ -124,7 +125,7 @@ class AudioFile:
 
             command = ['ffmpeg', '-y']
             command += ['-loglevel', 'panic']
-            command += ['-i', str(os.path.join(self.folder_path, Path("dev/noise"), self.file_name))] # load noise
+            command += ['-i', str(os.path.join(self.folder_path, Path(self.root_file + "/noise"), self.file_name))] # load noise
             if query_duration is not None:
                 command += ['-t', str(query_duration)]
             command += ['-f', 'f32le']
@@ -158,7 +159,11 @@ class AudioFile:
                     # Case 4: What is a reasonable choice here?
                     raise ValueError('The input file has less channels than requested')
                 if target_size is not None:
-                    wav = wav[..., :target_size]
+                    if(wav.shape[1]< target_size):
+                        # do sth
+                        wav = torch.nn.functional.pad(wav, pad=(0, target_size - wav.shape[1], 0, 0))
+                    else:
+                        wav = wav[..., :target_size]
                 wavs.append(wav)
         wav = torch.stack(wavs, dim=0)
         if single:
