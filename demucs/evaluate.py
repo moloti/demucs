@@ -54,7 +54,6 @@ logger = logging.getLogger(__name__)
 rank = 0
 world_size = 1
 
-
 def plot_spectrogram(spec, title=None, ylabel="freq_bin", aspect="auto", xmax=None):
     fig, axs = plt.subplots(1, 1)
     axs.set_title(title or "Spectrogram (db)")
