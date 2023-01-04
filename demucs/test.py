@@ -43,16 +43,9 @@ def evaluate(model,
     json_folder = eval_folder / "results/test"
     json_folder.mkdir(exist_ok=True, parents=True)
 
-    # we load tracks from the original musdb set
-    # test_set = MusDB(musdb_path, subsets=["test"])
     test_set_names = MyMusDB(musdb_path, "test")
     test_set = StemsSet(get_musdb_tracks(musdb_path, subsets="test"),
-                            folder_path=musdb_path,
-                            #metadata,
-                            # duration=duration,
-                            # stride=stride,
-                            # samplerate=args.samplerate,
-                            # channels=args.audio_channels
+                            folder_path=musdb_path
                             )
 
 
@@ -71,16 +64,13 @@ def evaluate(model,
             if out.exists():
                 continue
 
-            # mix = th.from_numpy(track).t().float()
             mix = track.sum(dim=0)
-            # ref = mix.mean(dim=0)  # mono mixture
 
             estimates = apply_model(model, mix.to(device), shifts=shifts, split=split)
             estimates = estimates * std_track + mean_track
 
             estimates = estimates.transpose(1, 2)
 
-            # estimates = estimates.transpose(1, 2)
             references = track
             references = references.numpy()
             estimates = estimates.cpu().numpy()
