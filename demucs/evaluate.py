@@ -127,7 +127,7 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
 
             estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
             estimates_clean = estimates * std_track + mean_track
-
+            
 
             if save and '6313-66129-0025_84-121550-0029.wav' in musdb_track.name:
                 estimates_trans = estimates_clean.transpose(1, 2)
