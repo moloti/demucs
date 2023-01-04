@@ -119,7 +119,7 @@ def validate_model(epoch,
         loss = criterion(estimates, sources)
         if stft_loss:
                 # Check if the input needs to be squeezed
-                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
+                sc_loss, mag_loss = stft_loss(estimates, sources)
                 loss += sc_loss + mag_loss
         current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
