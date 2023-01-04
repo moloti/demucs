@@ -5,7 +5,6 @@ class Track():
     def __init__(self, name, path, duration= 48000):
         self.name = name
         self.duration = duration
-        # self.track = track
         self.path = path
         self.audio = None
         self.targets = None

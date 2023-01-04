@@ -14,14 +14,8 @@ from .audio import AudioFile
 
 
 def get_musdb_tracks(root, subsets, root_folder="dev"):
-    # print(root, subsets)
     mus = MyMusDB(root, subsets, root_folder)
-    # print(mus.tracks)
-    # TODO create a functionthat would return a dictionary of filenames and their paths
     return {track.name: (track.path, track.duration) for track in mus.tracks}
-    # mus = musdb.DB(root, *args, **kwargs)
-    # return {track.name: track.path for track in mus}
-
 
 
 def get_validation_tracks(root, subsets):
@@ -37,8 +31,6 @@ class StemsSet:
 
         self.metadata = []
         for name, (path, duration) in tracks.items():
-            # meta = dict(metadata[name])
-            # we're missing duration on metadata of a track - might be needed to implement
             meta = {}
             meta["path"] = path
             meta["name"] = name
@@ -46,8 +38,6 @@ class StemsSet:
             meta["folder_path"] = folder_path
             meta["root_folder"] = root_folder
             self.metadata.append(meta)
-            # if duration is not None and meta["duration"] < duration:
-            #     raise ValueError(f"Track {name} duration is too small {meta['duration']}")
         self.metadata.sort(key=lambda x: x["name"])
         self.duration = duration
         self.stride = stride
@@ -163,8 +153,6 @@ class StemsSetValidation:
 
 
 def _get_track_metadata(path, filename):
-    # use mono at 44kHz as reference. For any other settings data won't be perfectly
-    # normalized but it should be good enough.
     audio = AudioFile(path, filename)
     mix, _, _ = audio.read(streams=0, channels=1, samplerate=8000)
     return {"duration": audio.duration, "std": mix.std().item(), "mean": mix.mean().item()}

@@ -40,14 +40,6 @@ def main():
     name = get_name(parser, args)
     print(f"Experiment {name}")
     args.musdb = os.path.join(sys.path[0], args.musdb)
-    #print(args.musdb)
-
-    # if args.musdb is None and args.rank == 0:
-    #     print(
-    #         "You must provide the path to the MusDB dataset with the --musdb flag. "
-    #         "To download the MusDB dataset, see https://sigsep.github.io/datasets/musdb.html.",
-    #         file=sys.stderr)
-    #     sys.exit(1)
 
     eval_folder = args.evals / name
     eval_folder.mkdir(exist_ok=True, parents=True)
@@ -81,16 +73,7 @@ def main():
 
     checkpoint = args.checkpoints / f"{name}.th"
     checkpoint_tmp = args.checkpoints / f"{name}.th.tmp"
-    # if args.restart and checkpoint.exists():
-    #     checkpoint.unlink()
 
-    # if args.test:
-    #     args.epochs = 1
-    #     args.repeat = 0
-    #     model = load_model(args.models / args.test)
-    # elif args.tasnet:
-    #     model = ConvTasNet(audio_channels=args.audio_channels, samplerate=args.samplerate, X=args.X)
-    # else:
     model = Demucs(
         audio_channels=args.audio_channels,
         channels=args.channels,
@@ -108,11 +91,7 @@ def main():
         samplerate=args.samplerate
     )
     model.to(device)
-    # if args.show:
-    #     print(model)
-    #     size = sizeof_fmt(4 * sum(p.numel() for p in model.parameters()))
-    #     print(f"Model size {size}")
-    #     return
+   
 
     optimizer = th.optim.Adam(model.parameters(), lr=args.lr)
 
@@ -120,10 +99,7 @@ def main():
         saved = th.load(checkpoint, map_location='cpu')
     except IOError:
         saved = SavedState()
-    # else:
-    #     model.load_state_dict(saved.last_state)
-    #     optimizer.load_state_dict(saved.optimizer)
-
+   
     if args.save_model:
         if args.rank == 0:
             model.to("cpu")
@@ -156,13 +132,8 @@ def main():
     samples = model.valid_length(args.samples)
     print(f"Number of training samples adjusted to {samples}")
 
-    # if not args.metadata.is_file() and args.rank == 0:
-    #     print("if")
-    #     build_musdb_metadata(args.metadata, args.musdb, args.workers)
-    # print(args.world_size)
     if args.world_size > 1:
         distributed.barrier()
-    # metadata = json.load(open(args.metadata))
     duration = Fraction(samples + args.data_stride, args.samplerate)
     stride = Fraction(args.data_stride, args.samplerate)
     train_set = StemsSet(get_musdb_tracks(root=args.musdb, subsets="train", root_folder="train-100"),
@@ -246,7 +217,6 @@ def main():
             }
         
 
-            # saved.last_state = model.state_dict()
             saved.optimizer = optimizer.state_dict()
             if args.rank == 0 and not args.test:
                 th.save(saved, checkpoint_tmp)
