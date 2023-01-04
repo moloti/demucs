@@ -38,6 +38,9 @@ def get_parser():
                         default=8000 * 6,
                         type=int,
                         help="number of samples to feed in")
+    parser.add_argument('--no_pesq', action="store_false", dest="pesq", default=True,
+                    help="Don't compute PESQ.")
+    parser.add_argument('--dataset_type', default="dev", help='Choose between the different dataset sizes and types: dev, test, train-100, train-360')
     parser.add_argument("--data_stride",
                         # default=44100,
                         default=8000,
@@ -82,16 +85,16 @@ def get_parser():
                         help='Restart training, ignoring previous run')
 
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("-e", "--epochs", type=int, default=120, help="Number of epochs")
+    parser.add_argument("-e", "--epochs", type=int, default=4, help="Number of epochs")
     parser.add_argument("-r",
                         "--repeat",
                         type=int,
-                        default=2,
+                        default=1,
                         help="Repeat the train set, longer epochs")
     parser.add_argument("-b", "--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--mse", action="store_true", help="Use MSE instead of L1")
-    parser.add_argument("--stft_loss", action="store_true", help="Use MulitResolution STFT Loss in addition to L1", default=True)
+    parser.add_argument("--stft_loss", action="store_true", help="Use MulitResolution STFT Loss in addition to L1", default=False)
     parser.add_argument("--no_augment",
                         action="store_false",
                         dest="augment",

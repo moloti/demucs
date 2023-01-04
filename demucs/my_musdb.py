@@ -13,34 +13,42 @@ class Track():
         self.targets = None
 
 class MyMusDB():
-    def __init__(self, root_path, set_type) -> None:
+    def __init__(self, root_path, set_type, path="train-100") -> None:
         self.root_path = root_path
         self.tracks=[]
-        self.__load_data__(set_type)
+        self.__load_data__(set_type, path)
 
     def __len__(self):
         return len(self.tracks)
 
-    def __load_data__(self, set_type):
+    def __load_data__(self, set_type, path):
         # here load files from root path to list of tracks
-        files = os.listdir(os.path.join(self.root_path, Path("dev/mix_single")))
-        train_valid_files, test_files = train_test_split(files, test_size=0.1, random_state=42)
-        train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
+        dataset = "/mix_single"
+        files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
+        # I path is containing dev or tain-100 or train-360
+
+        if 'dev' in path or 'train-100' in path or 'train-360' in path:
+            # train_valid_files, test_files = train_test_split(files, test_size=0.1, random_state=42)
+            train_files, valid_files = train_test_split(files, test_size=0.2, random_state=42)
+        elif(path == 'test'):
+            files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
+            test_files = files
+
 
         if set_type == "train":
             # for file_name in train_files[:8]:
             for file_name in train_files:
-                file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
+                file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "valid":
             # for file_name in valid_files[:4]:
             for file_name in valid_files:
-                file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
+                file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
         elif set_type == "test":
             # for file_name in test_files[:4]:
             for file_name in test_files:
-                file_path = os.path.join(self.root_path, Path("dev/mix_single"), Path(file_name))
+                file_path = os.path.join(self.root_path, Path(path + dataset), Path(file_name))
                 self.tracks.append(Track(file_name, file_path))
 
 class ValidationData():

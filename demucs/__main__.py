@@ -21,7 +21,7 @@ from demucs.compressed import StemsSet, get_musdb_tracks
 from demucs.model import Demucs
 from demucs.parser import get_name, get_parser
 from demucs.tasnet import ConvTasNet
-from demucs.test import evaluate
+from demucs.evaluate import evaluate
 from demucs.train import train_model, validate_model
 from demucs.utils import human_seconds, load_model, save_model, sizeof_fmt
 
@@ -257,17 +257,8 @@ def main():
         device = "cpu"
         model.to(device)
     model.eval()
-    # Here we need to add the evaluation model...
-    # evaluate(model,
-    #          args.musdb,
-    #          eval_folder,
-    #          rank=args.rank,
-    #          world_size=args.world_size,
-    #          device=device,
-    #          save=args.save,
-    #          split=args.split_valid,
-    #          shifts=args.shifts,
-    #          workers=args.eval_workers)
+
+    evaluate(args, model=model)
     
     model.to("cpu")
     save_model(model, args.models / f"{name}.th")

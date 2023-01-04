@@ -13,14 +13,16 @@ from demucs.my_musdb import MyMusDB, ValidationData
 from .audio import AudioFile
 
 
-def get_musdb_tracks(root, subsets):
+def get_musdb_tracks(root, subsets, root_folder="dev"):
     # print(root, subsets)
-    mus = MyMusDB(root, subsets)
+    mus = MyMusDB(root, subsets, root_folder)
     # print(mus.tracks)
     # TODO create a functionthat would return a dictionary of filenames and their paths
     return {track.name: (track.path, track.duration) for track in mus.tracks}
     # mus = musdb.DB(root, *args, **kwargs)
     # return {track.name: track.path for track in mus}
+
+
 
 def get_validation_tracks(root, subsets):
     validation_set = ValidationData(root, subsets)
