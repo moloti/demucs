@@ -105,7 +105,7 @@ class AudioFile:
         single = not isinstance(streams, np.ndarray)
         if single:
             streams = [streams]
-        duration =3
+        duration =6
         if duration is None:
             target_size = None
             query_duration = None
