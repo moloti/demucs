@@ -115,7 +115,6 @@ def validate_model(epoch,
         mix = sources.sum(dim=0) # x
         
         estimates = apply_model(model, mix, shifts=shifts, split=split)
-        # sources = center_trim(sources, estimates)
         loss = criterion(estimates, sources)
         if stft_loss:
                 # Check if the input needs to be squeezed

@@ -31,8 +31,6 @@ class StemsSet:
 
         self.metadata = []
         for name, (path, duration) in tracks.items():
-            # meta = dict(metadata[name])
-            # we're missing duration on metadata of a track - might be needed to implement
             meta = {}
             meta["path"] = path
             meta["name"] = name
@@ -40,8 +38,6 @@ class StemsSet:
             meta["folder_path"] = folder_path
             meta["root_folder"] = root_folder
             self.metadata.append(meta)
-            # if duration is not None and meta["duration"] < duration:
-            #     raise ValueError(f"Track {name} duration is too small {meta['duration']}")
         self.metadata.sort(key=lambda x: x["name"])
         self.duration = duration
         self.stride = stride
@@ -157,8 +153,6 @@ class StemsSetValidation:
 
 
 def _get_track_metadata(path, filename):
-    # use mono at 44kHz as reference. For any other settings data won't be perfectly
-    # normalized but it should be good enough.
     audio = AudioFile(path, filename)
     mix, _, _ = audio.read(streams=0, channels=1, samplerate=8000)
     return {"duration": audio.duration, "std": mix.std().item(), "mean": mix.mean().item()}
