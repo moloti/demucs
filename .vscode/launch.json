@@ -49,7 +49,7 @@
         "--musdb",
         "/Users/dg/Documents/Development/02456_Deep_Learning/LibriMix_Sample_With_Test/Libri2Mix/wav8k/min",
         "--model_path",
-        "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/models/musdb=min_epochs=1_batch_size=24.th",
+        "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/models/musdb=min_epochs=20_batch_size=24.th",
         "--evals",
         "/Users/dg/Documents/Development/02456_Deep_Learning/demucs/evals"
       ]

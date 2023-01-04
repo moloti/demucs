@@ -16,8 +16,12 @@ from demucs.compressed import StemsSet, StemsSetValidation, get_musdb_tracks, ge
 from demucs.utils import apply_model, load_model
 from torch.utils.data import DataLoader
 import torch.hub
-# from pesq import pesq, NoUtterancesError
-# from pystoi import stoi
+from pesq import pesq, NoUtterancesError
+from pystoi import stoi
+import mir_eval.separation as mes
+import torchaudio
+import librosa
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser('demucs.evaluate', description='Evaluate Model Performance')
 
@@ -49,152 +53,196 @@ parser.add_argument('--dry', type=float, default=0,
 logger = logging.getLogger(__name__)
 rank = 0
 world_size = 1
+
+
+def plot_spectrogram(spec, title=None, ylabel="freq_bin", aspect="auto", xmax=None):
+    fig, axs = plt.subplots(1, 1)
+    axs.set_title(title or "Spectrogram (db)")
+    axs.set_ylabel(ylabel)
+    axs.set_xlabel("frame")
+    im = axs.imshow(librosa.power_to_db(spec), origin="lower", aspect=aspect)
+    if xmax:
+        axs.set_xlim((0, xmax))
+    fig.colorbar(im, ax=axs)
+    plt.show(block=False)
+
             
 
 def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=False, save=True):
-    # pesq = 0
-    # stoi = 0
-    # cnt = 0
-    # updates = 5
+    pesq = 0
+    stoi = 0
+    sdr = 0
+    cnt = 0
+    updates = 5
 
-    # if args.evals is None:
-    #     eval_folder = args.musdb
-    # else:
-    #     eval_folder = Path(args.evals)
+    if args.evals is None:
+        eval_folder = args.musdb
+    else:
+        eval_folder = Path(args.evals)
 
-    # output_dir = eval_folder / "results"
-    # output_dir.mkdir(exist_ok=True, parents=True)
-    # json_folder = eval_folder / "results/test"
-    # json_folder.mkdir(exist_ok=True, parents=True)
+    output_dir = eval_folder / "results"
+    output_dir.mkdir(exist_ok=True, parents=True)
+    json_folder = eval_folder / "results/test"
+    json_folder.mkdir(exist_ok=True, parents=True)
 
-    # if(args.dataset_type):
-    #     root_folder = args.dataset_type
-    # else:
-    #     root_folder = "dev"
+    if(args.dataset_type):
+        root_folder = args.dataset_type
+    else:
+        root_folder = "dev"
 
-    # duration = Fraction(args.samples + args.data_stride, args.samplerate)
-    # stride = Fraction(args.data_stride, args.samplerate)
+    duration = Fraction(args.samples + args.data_stride, args.samplerate)
+    stride = Fraction(args.data_stride, args.samplerate)
 
-    # # Load model
-    # if model is None:
-    #     model = load_model(args.model_path)
+    # Load model
+    if model is None:
+        model = load_model(args.model_path)
 
-    # model.eval()
+    model.eval()
 
-    # # Load data
-    # if data_loader is None and args.musdb:
-    #     test_set_names = MyMusDB(args.musdb, "test", path=root_folder)
-    #     test_set = StemsSet(get_musdb_tracks(args.musdb, subsets="test", root_folder=root_folder),
-    #                         folder_path=args.musdb,
-    #                         duration=duration,
-    #                         stride=stride,
-    #                         samplerate=args.samplerate,
-    #                         channels=args.audio_channels)
+    best_result = {}
 
-    #     #loader = DataLoader(dataset, batch_size=1, num_workers=2)
+    # Load data
+    if data_loader is None and args.musdb:
+        test_set_names = MyMusDB(args.musdb, "test", path=root_folder)
+        test_set = StemsSet(get_musdb_tracks(args.musdb, subsets="test", root_folder=root_folder),
+                            folder_path=args.musdb,
+                            duration=duration,
+                            stride=stride,
+                            samplerate=args.samplerate,
+                            channels=args.audio_channels)
 
-    # for p in model.parameters():
-    #     p.requires_grad = False
-    #     p.grad = None
+    for p in model.parameters():
+        p.requires_grad = False
+        p.grad = None
 
-    # pendings = []
+    pendings = []
 
-    # with ProcessPoolExecutor(workers or 1) as pool:
-    #     for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout, position=0, leave=True):
+    with ProcessPoolExecutor(workers or 1) as pool:
+        for index in tqdm.tqdm(range(rank, len(test_set), world_size), file=sys.stdout):
                 
-    #         track, mean_track, std_track = test_set[index]
-    #         musdb_track = test_set_names.tracks[index]
+            track, mean_track, std_track = test_set[index]
+            musdb_track = test_set_names.tracks[index]
 
-    #         mix = track.sum(dim=0)
+            mix = track.sum(dim=0)
+
+            estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
+            estimates_clean = estimates * std_track + mean_track
+
+
+            if save and '6313-66129-0025_84-121550-0029.wav' in musdb_track.name:
+                estimates_trans = estimates_clean.transpose(1, 2)
+                estimates_trans = estimates_trans.cpu().numpy()
+                transform = torchaudio.transforms.Spectrogram(n_fft=800)
+                audio_spectogram_estimates = transform(estimates_trans[0])
+                audio_spectogram_references = transform(references.numpy())
+                plot_spectrogram(audio_spectogram_estimates, title="Estimates Spectrogram")
+                plot_spectrogram(audio_spectogram_references, title="References Spectrogram")
+
+                folder = eval_folder / "wav/test"
+                folder.mkdir(exist_ok=True, parents=True)
+                channel = 0
+                for estimate in estimates_trans:
+                    wavfile.write(str(folder / (str(channel) + "_" + musdb_track.name)), args.data_stride, estimate)
+                    channel += 1
+                
             
-    #         estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
-    #         estimates = estimates * std_track + mean_track
-
-    #         if save and '2902-9008-0000_6241-61943-0013.wav' in musdb_track.name:
-    #             estimates_trans = estimates.transpose(1, 2)
-    #             estimates_trans = estimates_trans.cpu().numpy()
-    #             folder = eval_folder / "wav/test"
-    #             folder.mkdir(exist_ok=True, parents=True)
-    #             for estimate in estimates_trans:
-    #                 wavfile.write(str(folder / (musdb_track.name)), args.data_stride, estimate)
-            
-    #         references = track
-    #         references = references.numpy()
-    #         estimates = estimates.cpu().numpy()
+            references = track
+            references = references.numpy()
+            estimates = estimates_clean.cpu().numpy()
 
 
-    #         if args.device == 'cpu':
-    #             pendings.append((musdb_track.name, pool.submit(_estimate_and_run_metrics, references, estimates, args)))
-    #         else:
-    #             pendings.append((musdb_track.name, pool.submit(_run_metrics, references, estimates, args)))
-    #         cnt += references.shape[0]
-    #         del references, mix, estimates, track
+            if args.device == 'cpu':
+                pendings.append(((musdb_track.name, estimates_clean, references), pool.submit(_estimate_and_run_metrics, references, estimates, args)))
+            else:
+                pendings.append(((musdb_track.name, estimates_clean, references), pool.submit(_run_metrics, references, estimates, args)))
+            cnt += references.shape[0]
+            del references, mix, estimates, track
 
 
-    #     for pending in tqdm.tqdm(pendings, file=sys.stdout, position=0, leave=True):
-    #         # Access the future and the name of the track
-    #         track_name, future = pending
-    #         try: 
-    #             (pesq_i, stoi_i)  = future.result()
-    #             pesq += pesq_i
-    #             stoi += stoi_i
-    #         except NoUtterancesError:
-    #             logger.warning(f"Track {track_name} has no utterances, skipping")
-    #             continue
+        for pending in tqdm.tqdm(pendings, file=sys.stdout):
+            # Access the future and the name of the track
+            track_name, future = pending
+            try: 
+                (pesq_i, stoi_i, sdr)  = future.result()
+                if best_result == {}:
+                    best_result = {'pesq': pesq_i, 'stoi': stoi_i, 'sdr': sdr, 'track_name': track_name}
+                else:
+                    if pesq_i > best_result['pesq']:
+                        best_result = {'pesq': pesq_i, 'stoi': stoi_i, 'sdr': sdr, 'track_name': track_name}
+
+                pesq += pesq_i
+                stoi += stoi_i
+                sdr += sdr
+            except NoUtterancesError:
+                logger.warning(f"Track {track_name} has no utterances, skipping")
+                continue
     
 
 
 
-    # metrics = [pesq, stoi]
-    # pesq_final, stoi_final = average([m/cnt for m in metrics], cnt)
-    # logger.info(f'Test set performance:PESQ={pesq_final}, STOI={stoi_final}.')
-    # return pesq_final, stoi_final
-    pass
+    metrics = [pesq, stoi, sdr]
+    pesq_final, stoi_final, sdr_final = average([m/cnt for m in metrics], cnt)
+    logger.info(f'Test set performance:PESQ={pesq_final}, STOI={stoi_final}.')
+    print(best_result)
+    return pesq_final, stoi_final, sdr_final
+
 
 def _estimate_and_run_metrics(references, estimates, args):
     return _run_metrics(references, estimates, args)
 
 
 def _run_metrics(references, estimates, args):
-    # estimates = estimates[:, 0]
-    # references = references[:, 0]
-    # if args.pesq:
-    #     pesq_i = get_pesq(references, estimates, sr=args.samplerate)
-    # else:
-    #     pesq_i = 0
-    # stoi_i = get_stoi(references, estimates, sr=args.samplerate)
-    # return pesq_i, stoi_i
-    pass
+    estimates = estimates[:, 0]
+    references = references[:, 0]
+    if args.pesq:
+        pesq_i = get_pesq(references, estimates, sr=args.samplerate)
+    else:
+        pesq_i = 0
+    stoi_i = get_stoi(references, estimates, sr=args.samplerate)
+    sdr = get_sdr(references, estimates)
+    return pesq_i, stoi_i, sdr
         
 
 def get_pesq(ref_sig, out_sig, sr):
-    # """Calculate PESQ.
-    # Args:
-    #     ref_sig: numpy.ndarray, [B, T]
-    #     out_sig: numpy.ndarray, [B, T]
-    # Returns:
-    #     PESQ
-    # """
-    # pesq_val = 0
-    # for i in range(len(ref_sig)):
-    #     pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'nb')
-    # return pesq_val
-    pass
+    """Calculate PESQ.
+    Args:
+        ref_sig: numpy.ndarray, [B, T]
+        out_sig: numpy.ndarray, [B, T]
+    Returns:
+        PESQ
+    """
+    pesq_val = 0
+    for i in range(len(ref_sig)):
+        pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'nb')
+    return pesq_val
+
 
 
 def get_stoi(ref_sig, out_sig, sr):
-    # """Calculate STOI.
-    # Args:
-    #     ref_sig: numpy.ndarray, [B, T]
-    #     out_sig: numpy.ndarray, [B, T]
-    # Returns:
-    #     STOI
-    # """
-    # stoi_val = 0
-    # for i in range(len(ref_sig)):
-    #     stoi_val += stoi(ref_sig[i], out_sig[i], sr, extended=False)
-    # return stoi_val
-    pass
+    """Calculate STOI.
+    Args:
+        ref_sig: numpy.ndarray, [B, T]
+        out_sig: numpy.ndarray, [B, T]
+    Returns:
+        STOI
+    """
+    stoi_val = 0
+    for i in range(len(ref_sig)):
+        stoi_val += stoi(ref_sig[i], out_sig[i], sr, extended=False)
+    return stoi_val
+
+def get_sdr(ref_sig, out_sig):
+    """Calculate SDR.
+    Args:
+        ref_sig: numpy.ndarray, [B, T]
+        out_sig: numpy.ndarray, [B, T]
+    Returns:
+        SDR
+    """
+    sdr_val = 0
+    for i in range(len(ref_sig)):
+        sdr_val += mes.bss_eval_sources(ref_sig[i], out_sig[i], False)[0]
+    return sdr_val
 
 def average(metrics, count=1.):
     """average.
@@ -215,8 +263,8 @@ def main():
 
     logging.basicConfig(stream=sys.stderr)
     logger.debug(args)
-    # pesq, stoi = evaluate(args)
-    # json.dump({'pesq': pesq, 'stoi': stoi}, sys.stdout)
+    pesq, stoi, sdr = evaluate(args)
+    json.dump({'pesq': pesq, 'stoi': stoi, 'sdr': sdr[0]}, sys.stdout)
     sys.stdout.write('\n')
 
 

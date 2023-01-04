@@ -1,10 +1,8 @@
-from typing import List
 from pathlib import Path
-from sklearn.model_selection import train_test_split
 import os
 
 class Track():
-    def __init__(self, name, path, duration=48000):
+    def __init__(self, name, path, duration= 48000):
         self.name = name
         self.duration = duration
         # self.track = track
@@ -13,7 +11,7 @@ class Track():
         self.targets = None
 
 class MyMusDB():
-    def __init__(self, root_path, set_type, path="dev") -> None:
+    def __init__(self, root_path, set_type, path="train-100") -> None:
         self.root_path = root_path
         self.tracks=[]
         self.__load_data__(set_type, path)
@@ -26,15 +24,6 @@ class MyMusDB():
         dataset = "/mix_single"
         files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
         # I path is containing dev or tain-100 or train-360
-
-
-        # if 'dev' in path or 'train-100' in path or 'train-360' in path:
-        #     train_valid_files, test_files = train_test_split(files, test_size=0.1, random_state=42)
-        #     train_files, valid_files = train_test_split(train_valid_files, test_size=0.2, random_state=42)
-        # elif(path == 'test'):
-        #     files = os.listdir(os.path.join(self.root_path, Path(path + dataset)))
-        #     test_files = files
-
 
         if set_type == "train":
             # for file_name in train_files[:8]:
