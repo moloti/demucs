@@ -160,7 +160,6 @@ class AudioFile:
                     raise ValueError('The input file has less channels than requested')
                 if target_size is not None:
                     if(wav.shape[1]< target_size):
-                        # do sth
                         wav = torch.nn.functional.pad(wav, pad=(0, target_size - wav.shape[1], 0, 0))
                     else:
                         wav = wav[..., :target_size]

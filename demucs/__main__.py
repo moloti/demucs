@@ -136,19 +136,19 @@ def main():
         if done.exists():
             done.unlink()
 
-    # if args.augment:
-    augment = nn.Sequential(FlipSign(), FlipChannels(), Shift(args.data_stride),
+    if args.augment:
+        augment = nn.Sequential(FlipSign(), FlipChannels(), Shift(args.data_stride),
                                 Remix(group_size=args.remix_group_size)).to(device)
-    # else:
-    #     augment = Shift(args.data_stride)
+    else:
+        augment = Shift(args.data_stride)
 
-    # if args.mse:
-    #     criterion = nn.MSELoss()
-    # else:
-    criterion = nn.L1Loss()
+    if args.mse:
+        criterion = nn.MSELoss()
+    else:
+        criterion = nn.L1Loss()
 
-    # if args.stft_loss: 
-    #     multiResSTFTLoss = MultiResolutionSTFTLoss().to(device)
+    if args.stft_loss: 
+        multiResSTFTLoss = MultiResolutionSTFTLoss().to(device)
 
     # Setting number of samples so that all convolution windows are full.
     # Prevents hard to debug mistake with the prediction being shifted compared
@@ -183,6 +183,14 @@ def main():
                             channels=args.audio_channels)
 
     best_loss = float("inf")
+
+    if args.world_size > 1:
+        dmodel = DistributedDataParallel(model,
+                                         device_ids=[th.cuda.current_device()],
+                                         output_device=th.cuda.current_device())
+    else:
+        dmodel = model
+
     for epoch, metrics in enumerate(saved.metrics):
         print(f"Epoch {epoch:03d}: "
               f"train={metrics['train']:.8f} "
@@ -197,8 +205,9 @@ def main():
         model.train()
         train_loss = train_model(epoch,
                                  train_set,
-                                 model,
-                                 criterion,
+                                 dmodel,
+                                 criterion,                                 
+                                 multiResSTFTLoss,
                                  optimizer,
                                  augment,
                                  batch_size=args.batch_size,
@@ -212,9 +221,11 @@ def main():
         valid_loss = validate_model(epoch,
                                     valid_set,
                                     model,
-                                    criterion,
+                                    criterion,                                    
+                                    multiResSTFTLoss,
                                     device=device,
-                                    rank=args.rank,
+                                    rank=args.rank,                                    
+                                    split=args.split_valid,
                                     world_size=args.world_size)
 
         duration = time.time() - begin
@@ -244,14 +255,14 @@ def main():
         print(f"Epoch {epoch:03d}: "
               f"train={train_loss:.8f} valid={valid_loss:.8f} best={best_loss:.4f} "
               f"duration={human_seconds(duration)}")
-
+    del dmodel
     model.load_state_dict(saved.best_state)
     if args.eval_cpu:
         device = "cpu"
         model.to(device)
     model.eval()
 
-    # evaluate(args, model=model)
+    evaluate(args, model=model)
     
     model.to("cpu")
     save_model(model, args.models / f"{name}.th")

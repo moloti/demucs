@@ -20,6 +20,7 @@ def train_model(epoch,
                 dataset,
                 model,
                 criterion,
+                stft_loss,
                 optimizer,
                 augment,
                 repeat=1,
@@ -54,8 +55,8 @@ def train_model(epoch,
             # skip uncomplete batch for augment.Remix to work properly
             continue
         streams = streams.to(device)
-        sources = streams  # [:, 1:]
-        # sources = augment(sources) # y 48000 -> 400000
+        sources = streams  
+        sources = augment(sources) # y 
         mix = sources.sum(dim=1) # x
         valid_length = model.valid_length(mix.shape[-1])
         delta = valid_length - mix.shape[-1]
@@ -65,6 +66,10 @@ def train_model(epoch,
         loss = criterion(estimates, sources)
         estimates = estimates[:, 1:]
         estimates = estimates.sum(dim=1)
+        if stft_loss:
+                # Check if the input needs to be squeezed
+                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
+                loss += sc_loss + mag_loss
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -88,6 +93,7 @@ def validate_model(epoch,
                    dataset,
                    model,
                    criterion,
+                   stft_loss,
                    device="cpu",
                    rank=0,
                    world_size=1,
@@ -111,9 +117,13 @@ def validate_model(epoch,
         estimates = apply_model(model, mix, shifts=shifts, split=split)
         # sources = center_trim(sources, estimates)
         loss = criterion(estimates, sources)
+        if stft_loss:
+                # Check if the input needs to be squeezed
+                sc_loss, mag_loss = stft_loss(estimates.squeeze(1), mix.squeeze(1))
+                loss += sc_loss + mag_loss
         current_loss += loss.item() / len(indexes)
         del estimates, streams, sources
 
     if world_size > 1:
-        current_loss = average_metric(current_loss)
+        current_loss = average_metric(current_loss, len(indexes))
     return current_loss
