@@ -105,7 +105,7 @@ class AudioFile:
         single = not isinstance(streams, np.ndarray)
         if single:
             streams = [streams]
-        duration =6
+        duration = 6
         if duration is None:
             target_size = None
             query_duration = None
@@ -159,7 +159,10 @@ class AudioFile:
                     # Case 4: What is a reasonable choice here?
                     raise ValueError('The input file has less channels than requested')
                 if target_size is not None:
-                    wav = wav[..., :target_size]
+                    if(wav.shape[1]< target_size):
+                        wav = torch.nn.functional.pad(wav, pad=(0, target_size - wav.shape[1], 0, 0))
+                    else:
+                        wav = wav[..., :target_size]
                 wavs.append(wav)
         wav = torch.stack(wavs, dim=0)
         if single:

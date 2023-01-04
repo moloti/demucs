@@ -15,6 +15,8 @@ def stft(x, fft_size, hop_size, win_length, window_fn):
     
     # Outputs 2 dimensional real tensor where the last dimension represents 
     # real and imaginary component
+
+    # Keep batch and size
     x = x.squeeze(1)
     x_transformed = torch.stft(x, fft_size, hop_size, win_length, window_fn)
     real = x_transformed[..., 0]
@@ -30,6 +32,7 @@ class SpectralConvergengeLoss(torch.nn.Module):
         super(SpectralConvergengeLoss, self).__init__()
 
     def forward(self, x_mag, y_mag):
+        y_mag = y_mag[:,0:len(x_mag[0]),:]
         """Calculate forward propagation.
         Args:
             x_mag (Tensor): Magnitude spectrogram of predicted signal (B, #frames, #freq_bins).
@@ -49,6 +52,7 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
         super(LogSTFTMagnitudeLoss, self).__init__()
 
     def forward(self, x_mag, y_mag):
+        y_mag = y_mag[:,0:len(x_mag[0]),:]
         """Calculate forward propagation.
         Args:
             x_mag (Tensor): Magnitude spectrogram of predicted signal (B, #frames, #freq_bins).

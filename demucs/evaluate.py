@@ -54,15 +54,6 @@ logger = logging.getLogger(__name__)
 rank = 0
 world_size = 1
 
-# def store_audio_file(eval_folder, filename, estimates_clean, references):
-#     path = f"{tempdir}/save_example_default.wav"
-#     torchaudio.save(path, waveform, sample_rate)
-#     folder = eval_folder / "wav/test"
-#                 folder.mkdir(exist_ok=True, parents=True)
-#                 channel = 0
-#                 for estimate in estimates_trans:
-#                     wavfile.write(str(folder / (str(channel) + "_" + musdb_track.name)), args.data_stride, estimate)
-#                     channel += 1
 
 def plot_spectrogram(spec, title=None, ylabel="freq_bin", aspect="auto", xmax=None):
     fig, axs = plt.subplots(1, 1)
@@ -120,8 +111,6 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
                             samplerate=args.samplerate,
                             channels=args.audio_channels)
 
-        #loader = DataLoader(dataset, batch_size=1, num_workers=2)
-
     for p in model.parameters():
         p.requires_grad = False
         p.grad = None
@@ -135,7 +124,7 @@ def evaluate(args, workers=2, model=None, data_loader=None, shifts=0, split=Fals
             musdb_track = test_set_names.tracks[index]
 
             mix = track.sum(dim=0)
-            
+
             estimates = apply_model(model, mix.to(args.device), shifts=shifts, split=split)
             estimates_clean = estimates * std_track + mean_track
 
@@ -226,6 +215,7 @@ def get_pesq(ref_sig, out_sig, sr):
     for i in range(len(ref_sig)):
         pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'nb')
     return pesq_val
+
 
 
 def get_stoi(ref_sig, out_sig, sr):

@@ -114,7 +114,7 @@ def apply_model(model, mix, shifts=None, split=False, progress=False):
         offsets = range(0, length, shift)
         scale = 10
         if progress:
-            offsets = tqdm.tqdm(offsets, unit_scale=scale, ncols=120, unit='seconds')
+            offsets = tqdm.tqdm(offsets, unit_scale=scale, ncols=120, unit='seconds', position=0, leave=True)
         for offset in offsets:
             chunk = mix[..., offset:offset + shift]
             chunk_out = apply_model(model, chunk, shifts=shifts)

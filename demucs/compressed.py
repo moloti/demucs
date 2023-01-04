@@ -33,7 +33,7 @@ def get_validation_tracks(root, subsets):
 
 
 class StemsSet:
-    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=8000, channels=1):
+    def __init__(self, tracks, folder_path, duration=None, stride=1, samplerate=8000, channels=1, root_folder="dev"):
 
         self.metadata = []
         for name, (path, duration) in tracks.items():
@@ -44,6 +44,7 @@ class StemsSet:
             meta["name"] = name
             meta["duration"] = duration
             meta["folder_path"] = folder_path
+            meta["root_folder"] = root_folder
             self.metadata.append(meta)
             # if duration is not None and meta["duration"] < duration:
             #     raise ValueError(f"Track {name} duration is too small {meta['duration']}")
@@ -76,7 +77,7 @@ class StemsSet:
             if index >= examples:
                 index -= examples
                 continue
-            streams, mean_streams,std_streams = AudioFile(meta["folder_path"], meta["name"]).read(seek_time=index * self.stride,
+            streams, mean_streams,std_streams = AudioFile(meta["folder_path"], meta["name"], meta["root_folder"]).read(seek_time=index * self.stride,
                                                    duration=self.duration,
                                                    channels=self.channels,
                                                    samplerate=self.samplerate)
@@ -139,7 +140,7 @@ class StemsSetValidation:
 
     def convert_item(self, meta, index, dataset_type):
         stream_item = {}
-        streams, mean_streams,std_streams = AudioFile(meta[dataset_type]["folder_path"], meta[dataset_type]["name"]).read(seek_time=index * self.stride,
+        streams, mean_streams,std_streams = AudioFile(meta[dataset_type]["folder_path"], meta[dataset_type]["name"], meta[dataset_type]["root_folder"]).read(seek_time=index * self.stride,
                                                    duration=self.duration,
                                                    channels=self.channels,
                                                    samplerate=self.samplerate)
